@@ -1,0 +1,35 @@
+{% extends "base.html" %} {% block title %}Lobby{% endblock %} {% block content
+%}
+<div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+  <h2 class="text-2xl font-bold mb-6 text-center">Lobby</h2>
+  <p class="mb-4">
+    Welcome, {{ username }}! Choose a skill and enter a room number to play
+    chess.
+  </p>
+  <h3 class="text-xl font-semibold mb-4">Select Skill</h3>
+  <div
+    id="skills-container"
+    class="flex flex-col max-h-64 overflow-y-auto border rounded p-2 mb-6"
+  ></div>
+  <form method="POST" class="space-y-4">
+    <input type="hidden" id="selected-skill" name="skill" value="none" />
+    <div>
+      <label for="room" class="block text-sm font-medium">Room Number</label>
+      <input
+        type="text"
+        name="room"
+        id="room"
+        class="w-full p-2 border rounded-md"
+        required
+      />
+    </div>
+    <button
+      type="submit"
+      class="w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700"
+    >
+      Join Room
+    </button>
+  </form>
+</div>
+<script type="module" src="/static/js/lobby.js"></script>
+{% endblock %}

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GameData>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_NAME" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_DESC" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_NAME" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_DESC" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_NAME" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_DESC" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_NAME" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_DESC" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_NAME" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_DESC" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_NAME" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+    <LocalizedText>
+        <Replace Tag="LOC_SKILL_NONE_DESC" Language="cn">
+            <Text>None</Text>
+        </Replace>
+    </LocalizedText>
+</GameData>

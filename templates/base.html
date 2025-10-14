@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}{% endblock %} - Online Chess</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <nav class="bg-blue-600 text-white p-4">
+      <div class="container mx-auto flex justify-between items-center">
+        <a href="{{ url_for('lobby') }}" class="text-2xl font-bold"
+          >Online Chess</a
+        >
+        {% if session.username %}
+        <div class="flex items-center space-x-4">
+          <span>Welcome, {{ session.username }}</span>
+          <a href="{{ url_for('leaderboard') }}" class="hover:underline"
+            >Leaderboard</a
+          >
+          <a href="{{ url_for('logout') }}" class="hover:underline">Logout</a>
+        </div>
+        {% endif %}
+      </div>
+    </nav>
+    <main class="container mx-auto mt-8">
+      {% block content %} {% endblock %}
+    </main>
+  </body>
+</html>
