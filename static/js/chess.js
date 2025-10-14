@@ -4,6 +4,7 @@ const game = new Chess();
 let selectedSquare = null;
 let myColor = null;
 let socket = null;
+let in_check = false;
 
 const pieceNames = {
   p: "pawn",
@@ -90,8 +91,10 @@ function renderBoard() {
 }
 
 function updateTurnStatus() {
-  document.getElementById("turn-status").innerText =
-    game.turn() === myColor[0] ? "Your turn" : "Opponent's turn";
+  turnText = `${game.turn() === myColor[0] ? "Your" : "Opponent's"} turn ${
+    in_check ? "<span class='font-bold text-red-700'>CHECK</span>" : ""
+  }`;
+  document.getElementById("turn-status").innerText = turnText;
 }
 
 function handleSquareClick(event) {
@@ -155,6 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   socket.on("move_made", (data) => {
     const move = data.move;
+    in_check = move.in_check;
     const fromSquare = move.from;
     const toSquare = move.to;
     const fromRow = 8 - parseInt(fromSquare[1]);
@@ -246,17 +250,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("resign").addEventListener("click", () => {
     socket.emit("resign", { room });
-  });
-
-  // For testing
-  document.getElementById("end-game").addEventListener("click", () => {
-    fetch("/update_win", { method: "POST" })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.status === "success") {
-          alert("Win recorded! Redirecting to leaderboard.");
-          window.location.href = "/leaderboard";
-        }
-      });
   });
 });

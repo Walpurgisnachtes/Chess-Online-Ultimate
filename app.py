@@ -79,11 +79,141 @@ def get_squares_between(from_sq, to_sq):
         squares.append(sq)
     return squares
 
+def is_check(board, your_skill, opponent_skill):
+    def is_king_attacked_by_theocracy(board_to_check: chess.Board) -> bool:
+        king_square = board_to_check.king(board_to_check.turn)
+        if king_square is None:
+            return False
+            
+        opponent_color = not board_to_check.turn
+        enemy_bishops = board_to_check.pieces(chess.BISHOP, opponent_color)
+
+        for bishop_square in enemy_bishops:
+            # Phantom Piece Technique:
+            # 1. Temporarily replace the bishop with a queen.
+            original_piece = board_to_check.piece_at(bishop_square)
+            board_to_check.set_piece_at(bishop_square, chess.Piece(chess.QUEEN, opponent_color))
+
+            # 2. Check if this "phantom queen" attacks the king.
+            is_attacked = board_to_check.is_attacked_by(opponent_color, king_square)
+
+            # 3. CRITICAL: Restore the board to its original state.
+            board_to_check.set_piece_at(bishop_square, original_piece)
+
+            if is_attacked:
+                # An enemy bishop is checking the king like a queen.
+                return True
+        
+        return False
+
+    standard_check = board.is_check()
+
+    theocracy_check = False
+    if opponent_skill == 'theocracy':
+        board_copy = board.copy()
+        theocracy_check = is_king_attacked_by_theocracy(board_copy)
+
+    is_in_check_overall = standard_check or theocracy_check
+
+    immunity = False
+    if your_skill == 'theocracy':
+        immunity = immunity or is_protected_by_theocracy(board, board.turn)
+            
+    return is_in_check_overall and not immunity
+
+def is_checkmate(board, your_skill, opponent_skill):
+        if not is_check(board, your_skill, opponent_skill):
+            return False
+        return not any(board.legal_moves())
+
 def is_path_clear(board, from_sq, to_sq):
     for sq in get_squares_between(from_sq, to_sq):
         if board.piece_at(sq):
             return False
     return True
+
+def is_path_clear_blitzkrieg(board, from_sq, to_sq, turn_color):
+    for sq in get_squares_between(from_sq, to_sq):
+        if board.piece_at(sq).color != turn_color:
+            return False
+    return True
+
+def is_protected_by_theocracy(board, turn_color):
+    return board.pieces(chess.BISHOP, turn_color).__len__() > 0
+
+def is_legal_second_move_no_capture(board, move):
+    if board.is_capture(move):
+        return False
+    return True
+
+def is_legal_second_move_no_check(board, move):
+    if board.gives_check(move):
+        return False
+    return True
+
+def is_legal_second_move_no_capture_and_check(board, move):
+    if board.is_capture(move):
+        return False
+    if board.gives_check(move):
+        return False
+    return True
+
+def is_movable_under_subjects(board, your_skill, opponent_skill, from_sq, to_sq, turn_color):
+    def check_in_front_of(pawn_sq: str, piece_sq: str, pawn_color: chess.Color) -> bool:
+        try:
+            pawn_square_index = chess.parse_square(pawn_sq)
+            piece_square_index = chess.parse_square(piece_sq)
+        except ValueError:
+            return False
+
+        pawn_file = chess.square_file(pawn_square_index)
+        piece_file = chess.square_file(piece_square_index)
+
+        if pawn_file != piece_file:
+            return False
+
+        pawn_rank = chess.square_rank(pawn_square_index)
+        piece_rank = chess.square_rank(piece_square_index)
+
+        if pawn_color == chess.WHITE:
+            return piece_rank > pawn_rank
+        else:
+            return piece_rank < pawn_rank
+
+    from_square_index = chess.parse_square(from_sq)
+    to_square_index = chess.parse_square(to_sq)
+    move = chess.Move(from_square_index, to_square_index)
+
+    moving_piece = board.piece_at(from_square_index)
+    if not moving_piece:
+        return True
+
+    if moving_piece.piece_type == chess.KING and is_check(board, your_skill, opponent_skill):
+        return True
+
+    enemy_color = not turn_color
+    enemy_pawns = board.pieces(chess.PAWN, enemy_color)
+    
+    subjects_skill_applying_pawn_squares = set()
+    for pawn_square_index in enemy_pawns:
+        pawn_sq_name = chess.square_name(pawn_square_index)
+        is_applying_subjects = check_in_front_of(
+            pawn_sq=pawn_sq_name,
+            piece_sq=from_sq,
+            pawn_color=enemy_color
+        )
+        if is_applying_subjects:
+            subjects_skill_applying_pawn_squares.add(pawn_square_index)
+    
+    if not subjects_skill_applying_pawn_squares:
+        return True
+    
+    is_a_capture = board.is_capture(move)
+
+    if is_a_capture and to_square_index in subjects_skill_applying_pawn_squares:
+        return True
+    else:
+        return False
 
 def is_promotion(board, from_sq, to_sq):
     piece = board.piece_at(from_sq)
@@ -93,36 +223,100 @@ def is_promotion(board, from_sq, to_sq):
             return True
     return False
 
-def is_majesty_legal(board, move, is_majesty):
-    if board.is_legal(move):
-        return True
-    if not is_majesty:
+def is_move_legal(board: chess.Board, move: chess.Move, your_skill: str, opponent_skill: str, *args, **kwargs) -> bool:
+    """
+    Checks if a move is legal, considering standard rules and custom skills.
+    This version is fixed to prevent the board.turn side-effect bug.
+    """
+    
+    # --- Step 0: Handle Special Cases like Rampage's Second Move ---
+    is_second_move = kwargs.get("second_move", False)
+    if is_second_move:
+        # For a second move, only the skill's specific rules apply.
+        # We assume the rampage function also checks for basic legality.
+        if your_skill == 'rampage':
+            # We pass the original board turn here.
+            return is_legal_second_move_no_capture_and_check(board, move.from_square, move.to_square, board.turn)
+        else:
+            # No other skill grants a second move.
+            return False
+
+    # --- Step 1: Determine if the move has a basis for legality (Standard or Custom) ---
+    
+    # This is the SAFE way to check for standard legality without side effects.
+    is_standard_legal = move in board.legal_moves
+    
+    is_custom_legal = False
+    moving_piece = board.piece_at(move.from_square)
+
+    # If the move isn't standard, check if a skill makes it legal.
+    if not is_standard_legal and moving_piece:
+        if your_skill == 'theocracy' and moving_piece.piece_type == chess.BISHOP:
+            # Check if a bishop is making a queen-like move on a clear path.
+            # (Assuming these helpers exist and are correct)
+            if is_queen_like_move(move.from_square, move.to_square) and is_path_clear(board, move.from_square, move.to_square):
+                is_custom_legal = True
+        
+        elif your_skill == 'blitzkrieg' and moving_piece.piece_type == chess.ROOK:
+            # Check if a rook is making a valid blitzkrieg move.
+            # (Assuming this helper exists)
+            if is_path_clear_blitzkrieg(board, move.from_square, move.to_square, board.turn):
+                is_custom_legal = True
+    
+    # If the move is neither standard-legal nor made legal by a skill, it's invalid.
+    if not is_standard_legal and not is_custom_legal:
         return False
-    if board.piece_at(move.from_square).piece_type != chess.KING:
+
+    # --- Step 2: Check for blocking conditions ---
+
+    # Block moving onto a piece of the same color.
+    target_piece = board.piece_at(move.to_square)
+    if target_piece and target_piece.color == board.turn:
         return False
-    if not is_queen_like_move(move.from_square, move.to_square):
-        return False
-    if not is_path_clear(board, move.from_square, move.to_square):
-        return False
-    target = board.piece_at(move.to_square)
-    if target and target.color == board.turn:
-        return False
-    if board.is_attacked_by(not board.turn, move.to_square):
-        return False
-    board.push(move)
-    in_check = board.is_check()
-    board.pop()
-    if in_check:
-        return False
+
+    # Block capturing a king protected by Theocracy immunity.
+    if target_piece and target_piece.piece_type == chess.KING:
+        # We need to check the opponent's immunity.
+        if is_protected_by_theocracy(board, not board.turn):
+            return False
+            
+    # Check if the move is blocked by the opponent's 'Subjects' skill.
+    if opponent_skill == 'subjects':
+        if not is_movable_under_subjects(board, your_skill, opponent_skill, move.from_square, move.to_square, board.turn):
+            return False
+            
+    # --- Step 3: Final check - does the move leave the king in check? ---
+    # This is the most important check and must be done last.
+    # The push/pop pattern is the correct and safe way to test this.
+    try:
+        board.push(move)
+        # After pushing, board.turn is now the opponent's color.
+        # is_check needs to check if the *previous* player is now in check.
+        # So we create a temporary board with the turn flipped back.
+        board_after_move = board.copy()
+        board_after_move.turn = not board.turn # Check from the perspective of the player who just moved
+        
+        # The is_check function should be designed to check the player whose turn it is.
+        # So we need to call it on the copied board with the turn flipped back.
+        if is_check(board_after_move, your_skill, opponent_skill):
+            # The move resulted in the player being in check (e.g., moving a pinned piece).
+            board.pop()
+            return False
+            
+    finally:
+        # Ensure the board is always restored, even if an error occurs.
+        board.pop()
+
+    # If all checks passed, the move is fully legal.
     return True
 
 def apply_skills(board, skills):
     for color_key, skill in skills.items():
-        if skill == 'majesty':
-            color = chess.WHITE if color_key == 'white' else chess.BLACK
+        color = chess.WHITE if color_key == 'white' else chess.BLACK
+        if skill == 'theocracy':
             for sq in chess.SQUARES:
                 piece = board.piece_at(sq)
-                if piece and piece.color == color and piece.piece_type != chess.KING:
+                if piece and piece.color == color and piece.piece_type == chess.QUEEN:
                     board.remove_piece_at(sq)
 
 @app.route('/')
@@ -239,6 +433,7 @@ def on_make_move(data):
     else:
         return
     turn_color = 'white' if game['turn'] == 'w' else 'black'
+    opponent_color = 'black' if game['turn'] == 'w' else 'white'
     if color != turn_color:
         emit('message', {'msg': 'Not your turn'}, to=sid)
         return
@@ -247,8 +442,8 @@ def on_make_move(data):
     move = chess.Move(from_sq, to_sq)
     if is_promotion(game['board'], from_sq, to_sq):
         move.promotion = chess.QUEEN
-    is_majesty = game['skills'][color] == 'majesty'
-    if is_majesty_legal(game['board'], move, is_majesty):
+    
+    if is_move_legal(game['board'], move, game['skills'][color], game['skills'][opponent_color]):
         # Prepare move details for client animation
         promotion = move.promotion.str.lower() if move.promotion else None
         captured_sq = None
@@ -270,8 +465,8 @@ def on_make_move(data):
                 rook_from = chess.square_name(chess.A1 if is_white else chess.A8)
                 rook_to = chess.square_name(chess.D1 if is_white else chess.D8)
         game['board'].push(move)
-        if game['board'].is_checkmate():
-            winner = color
+        if is_checkmate(game['board'], game['skills'][color], game['skills'][opponent_color]):
+            winner = opponent_color
             leaderboard = load_leaderboard()
             leaderboard[game['usernames'][winner]] += 1
             save_leaderboard(leaderboard)

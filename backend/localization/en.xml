@@ -36,7 +36,7 @@
             <Text>Theocracy</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_THEOCRACY_DESC" Language="en">
-            <Text>Replace Queen with Bishop, Bishop moves like Queen.[linebreak]Your King will not in check before all your Bishops are being captured.</Text>
+            <Text>Your Bishops moves like Queen, but remove your Queen.[linebreak]Your King will not in check before all your Bishops are captured.</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_RAMPAGE_NAME" Language="en">
             <Text>Rampage</Text>
@@ -48,13 +48,13 @@
             <Text>Blitzkrieg</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_BLITZKRIEG_DESC" Language="en">
-            <Text>Rooks can jump over other friendly pieces.[linebreak]Once per turn, when you moves a rook without capturing or checking, you can perform an extra move for one other rook.[linebreak]The second move cannot checks.</Text>
+            <Text>Rooks can jump over other friendly pieces.[linebreak]Once per turn, when you moves a rook without capturing or checking, you can perform an extra move for one other rook.</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_SUBJECTS_NAME" Language="en">
             <Text>Subjects</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_SUBJECTS_DESC" Language="en">
-            <Text>Enemy pieces in front of your Pawns cannot move, unless it captures, checks or in check.</Text>
+            <Text>Enemy pieces in front of your Pawns cannot move, unless they are able to capture another pieces or in check.</Text>
         </Replace>
 
         <!-- Keywords -->
