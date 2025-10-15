@@ -24,37 +24,49 @@
             <Text>None</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_NONE_DESC" Language="en">
-            <Text>Standard chess rules.</Text>
+            <Text>Follows standard chess rules.</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_REVIVE_NAME" Language="en">
             <Text>Revive</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_REVIVE_DESC" Language="en">
-            <Text>Once per game, if your Knight, Bishop or Rook is captured, revives it at the end of your turn if possible.</Text>
+            <Text>Once per game, revive a captured Knight, Bishop, or Rook at the end of your turn.</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_THEOCRACY_NAME" Language="en">
             <Text>Theocracy</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_THEOCRACY_DESC" Language="en">
-            <Text>Your Bishops moves like Queen, but remove your Queen.[linebreak]Your King will not in check before all your Bishops are captured.</Text>
+            <Text>Your Bishops move like Queens, but your Queen is removed.[linebreak]Your King cannot be in check until all your Bishops are captured.</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_RAMPAGE_NAME" Language="en">
             <Text>Rampage</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_RAMPAGE_DESC" Language="en">
-            <Text>Once per turn, Knights can perform an extra move after capturing any piece.[linebreak]The second move cannot captures or checks.</Text>
+            <Text>Once per turn, a Knight can make an extra move after capturing a piece.[linebreak]The extra move cannot capture or check.</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_BLITZKRIEG_NAME" Language="en">
             <Text>Blitzkrieg</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_BLITZKRIEG_DESC" Language="en">
-            <Text>Rooks can jump over other friendly pieces.[linebreak]Once per turn, when you moves a rook without capturing or checking, you can perform an extra move for one other rook.</Text>
+            <Text>Rooks can jump over friendly pieces.[linebreak]Once per turn, after moving a Rook without capturing or checking, you can move another Rook.</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_SUBJECTS_NAME" Language="en">
             <Text>Subjects</Text>
         </Replace>
         <Replace Tag="LOC_SKILL_SUBJECTS_DESC" Language="en">
-            <Text>Enemy pieces in front of your Pawns cannot move, unless they are able to capture another pieces or in check.</Text>
+            <Text>Enemy pieces directly in front of your Pawns cannot move unless they can capture another piece or are in check.</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_ENTRAPMENT_NAME" Language="en">
+            <Text>Entrapment</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_ENTRAPMENT_DESC" Language="en">
+            <Text>Once per game, if your Knight, Bishop, Rook, or Queen is about to be captured by an enemy piece (except the King), capture that piece instead.</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_OVERTHROWN_NAME" Language="en">
+            <Text>Overthrown</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_OVERTHROWN_DESC" Language="en">
+            <Text>Each time a player moves a piece without capturing or checking, a random piece from that player's side (except the King) is removed.</Text>
         </Replace>
 
         <!-- Keywords -->

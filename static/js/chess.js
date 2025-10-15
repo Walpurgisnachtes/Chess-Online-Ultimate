@@ -94,7 +94,7 @@ function updateTurnStatus() {
   turnText = `${game.turn() === myColor[0] ? "Your" : "Opponent's"} turn ${
     in_check ? "<span class='font-bold text-red-700'>CHECK</span>" : ""
   }`;
-  document.getElementById("turn-status").innerText = turnText;
+  document.getElementById("turn-status").innerHTML = turnText;
 }
 
 function handleSquareClick(event) {

@@ -79,6 +79,68 @@ def get_squares_between(from_sq, to_sq):
         squares.append(sq)
     return squares
 
+def handle_revive_skill(board: chess.Board, captured_piece: chess.Piece, captured_on_square: int, game: dict):
+    
+    ORIGINAL_SQUARES = {
+        chess.WHITE: {
+            chess.ROOK: [chess.A1, chess.H1],
+            chess.KNIGHT: [chess.B1, chess.G1],
+            'BISHOP_SQUARES': {
+                "LIGHT": chess.F1,
+                "DARK": chess.C1
+            }
+        },
+        chess.BLACK: {
+            chess.ROOK: [chess.A8, chess.H8],
+            chess.KNIGHT: [chess.B8, chess.G8],
+            'BISHOP_SQUARES': {
+                "LIGHT": chess.C8,
+                "DARK": chess.F8
+            }
+        }
+    }
+
+    def get_square_color(sq):
+        if isinstance(sq, str):
+            sq = chess.parse_square(sq)
+        
+        if sq < 0 or sq > 63:
+            raise ValueError("Invalid square")
+        
+        file_idx = chess.square_file(sq)
+        rank_idx = chess.square_rank(sq)
+        return "LIGHT" if (file_idx + rank_idx) % 2 == 0 else "DARK"
+        
+    if captured_piece is None:
+        return
+
+    reviving_player_color = captured_piece.color
+    color_key = "white" if reviving_player_color == chess.WHITE else "black"
+    
+    if game.get('revive', {}).get(color_key, False):
+        return
+
+    piece_type = captured_piece.piece_type
+    if piece_type not in [chess.KNIGHT, chess.BISHOP, chess.ROOK]:
+        return
+
+    revival_squares = []
+    if piece_type == chess.KNIGHT or piece_type == chess.ROOK:
+        revival_squares = ORIGINAL_SQUARES[reviving_player_color][piece_type]
+    elif piece_type == chess.BISHOP:
+        square_color = get_square_color(captured_on_square)
+        bishop_home_square = ORIGINAL_SQUARES[reviving_player_color]['BISHOP_SQUARES'][square_color]
+        revival_squares.append(bishop_home_square)
+
+    for square in revival_squares:
+        if board.piece_at(square) is None:
+            board.set_piece_at(square, captured_piece)
+            
+            if 'revive' not in game:
+                game['revive'] = {"white": False, "black": False}
+            game['revive'][color_key] = True
+            return
+
 def is_check(board, your_skill, opponent_skill):
     def is_king_attacked_by_theocracy(board_to_check: chess.Board) -> bool:
         king_square = board_to_check.king(board_to_check.turn)
@@ -106,6 +168,41 @@ def is_check(board, your_skill, opponent_skill):
         
         return False
 
+    def is_king_attacked_by_blitzkrieg(board_to_check: chess.Board) -> bool:
+        """
+        Checks if the king is attacked by an enemy rook that can jump friendly pieces.
+        """
+        king_square = board_to_check.king(board_to_check.turn)
+        if king_square is None: return False
+        
+        opponent_color = not board_to_check.turn
+        enemy_rooks = board_to_check.pieces(chess.ROOK, opponent_color)
+
+        for rook_square in enemy_rooks:
+            # Check horizontal and vertical paths from the rook
+            # A Blitzkrieg attack is valid if the path to the king is either empty
+            # or contains ONLY pieces of the same color as the rook.
+            
+            # Get all squares between the rook and the king (if they are aligned)
+            # The `chess.SquareSet` intersection is a powerful way to do this.
+            squares_between = chess.SquareSet(chess.between(rook_square, king_square))
+            
+            # If they are not aligned, squares_between will be empty, and the loop won't run.
+            is_blocked = False
+            for sq in squares_between:
+                piece = board_to_check.piece_at(sq)
+                if piece and piece.color != opponent_color:
+                    # Path is blocked by a piece that is NOT friendly to the rook.
+                    is_blocked = True
+                    break
+            
+            if not is_blocked:
+                # If the path is clear (or only has friendly pieces), we check if the king
+                # is actually on the same rank or file. We can use the standard attacker check for this.
+                if bool(board_to_check.attackers(opponent_color, king_square) & chess.SquareSet([rook_square])):
+                    return True
+        return False
+
     standard_check = board.is_check()
 
     theocracy_check = False
@@ -113,7 +210,12 @@ def is_check(board, your_skill, opponent_skill):
         board_copy = board.copy()
         theocracy_check = is_king_attacked_by_theocracy(board_copy)
 
-    is_in_check_overall = standard_check or theocracy_check
+    blitzkrieg_check = False
+    if opponent_skill == 'blitzkrieg':
+        # No need to copy the board, our helper function only reads data.
+        blitzkrieg_check = is_king_attacked_by_blitzkrieg(board)
+
+    is_in_check_overall = standard_check or theocracy_check or blitzkrieg_check
 
     immunity = False
     if your_skill == 'theocracy':
@@ -121,10 +223,44 @@ def is_check(board, your_skill, opponent_skill):
             
     return is_in_check_overall and not immunity
 
-def is_checkmate(board, your_skill, opponent_skill):
-        if not is_check(board, your_skill, opponent_skill):
-            return False
-        return not any(board.legal_moves())
+
+def is_checkmate(game: dict, board: chess.Board, your_skill: str, opponent_skill: str) -> bool:
+    """
+    Determines if the current player is in checkmate, considering all custom skills.
+
+    This function is correct because it does not rely on board.legal_moves.
+    Instead, it checks all possible moves with a custom is_move_legal function.
+    """
+    # Condition 1: The player must be in check to be checkmated.
+    if not is_check(board, your_skill, opponent_skill):
+        return False
+
+    # Condition 2: The player must have NO legal moves to escape the check.
+    current_player_color = board.turn
+    
+    # Get a list of all squares occupied by the current player's pieces.
+    my_piece_squares = [sq for sq in chess.SQUARES if board.piece_at(sq) and board.piece_at(sq).color == current_player_color]
+
+    for from_square in my_piece_squares:
+        # Iterate through every possible destination square on the board
+        for to_square in chess.SQUARES:
+            if from_square == to_square:
+                continue
+
+            # Create a move object.
+            move = chess.Move(from_square, to_square)
+
+            # Use the comprehensive is_move_legal function. This is the key to the solution.
+            # It must be able to validate standard moves, Blitzkrieg jumps, Theocracy moves, etc.,
+            # and ensure the king is not in check after the move.
+            if is_move_legal(game, board, move, your_skill, opponent_skill):
+                # If we find even ONE legal move, it is not checkmate.
+                # print(f"DEBUG: Found legal escape move: {move}") # Optional: for debugging
+                return False
+
+    # If the function has looped through every possible move and found none to be legal,
+    # then it is truly checkmate.
+    return True
 
 def is_path_clear(board, from_sq, to_sq):
     for sq in get_squares_between(from_sq, to_sq):
@@ -134,12 +270,12 @@ def is_path_clear(board, from_sq, to_sq):
 
 def is_path_clear_blitzkrieg(board, from_sq, to_sq, turn_color):
     for sq in get_squares_between(from_sq, to_sq):
-        if board.piece_at(sq).color != turn_color:
+        if board.piece_at(sq) and board.piece_at(sq).color != turn_color:
             return False
     return True
 
 def is_protected_by_theocracy(board, turn_color):
-    return board.pieces(chess.BISHOP, turn_color).__len__() > 0
+    return len(board.pieces(chess.BISHOP, turn_color)) > 0
 
 def is_legal_second_move_no_capture(board, move):
     if board.is_capture(move):
@@ -223,7 +359,7 @@ def is_promotion(board, from_sq, to_sq):
             return True
     return False
 
-def is_move_legal(board: chess.Board, move: chess.Move, your_skill: str, opponent_skill: str, *args, **kwargs) -> bool:
+def is_move_legal(game: dict, board: chess.Board, move: chess.Move, your_skill: str, opponent_skill: str, *args, **kwargs) -> bool:
     """
     Checks if a move is legal, considering standard rules and custom skills.
     This version is fixed to prevent the board.turn side-effect bug.
@@ -231,12 +367,30 @@ def is_move_legal(board: chess.Board, move: chess.Move, your_skill: str, opponen
     
     # --- Step 0: Handle Special Cases like Rampage's Second Move ---
     is_second_move = kwargs.get("second_move", False)
+    
     if is_second_move:
         # For a second move, only the skill's specific rules apply.
-        # We assume the rampage function also checks for basic legality.
         if your_skill == 'rampage':
-            # We pass the original board turn here.
-            return is_legal_second_move_no_capture_and_check(board, move.from_square, move.to_square, board.turn)
+            if move.from_square != game["data"]["rampage"]:
+                return False
+            
+            return is_legal_second_move_no_capture_and_check(board, move)
+        
+        elif your_skill == 'blitzkrieg':
+            rook_position = board.pieces(chess.ROOK, board.turn)
+            
+            if len(rook_position) < 2:
+                return False
+            
+            try:
+                rook_position.remove(game["data"]["blitzkrieg"])
+                movable_rook_under_blitzkrieg = rook_position.pop()
+            except:
+                return False
+            
+            if move.from_square != movable_rook_under_blitzkrieg:
+                return False
+        
         else:
             # No other skill grants a second move.
             return False
@@ -310,7 +464,46 @@ def is_move_legal(board: chess.Board, move: chess.Move, your_skill: str, opponen
     # If all checks passed, the move is fully legal.
     return True
 
-def apply_skills(board, skills):
+def check_extra_move(game: dict, board: chess.Board, move: chess.Move, your_skill: str, opponent_skill: str, *args, **kwargs) -> bool:
+    # By default, no extra move is granted.
+    extra_move_granted = False
+
+    # --- Check for Rampage Skill ---
+    if your_skill == 'rampage':
+        if get_skill_count(game, your_skill, board.turn) > 0:
+            return False
+        
+        moving_piece = board.piece_at(move.from_square)
+        
+        # Conditions: 1. Piece is a Knight, 2. Move is a capture.
+        if moving_piece and moving_piece.piece_type == chess.KNIGHT:
+            if board.is_capture(move):
+                extra_move_granted = True
+
+    # --- Check for Blitzkrieg Skill ---
+    elif your_skill == 'blitzkrieg':
+        if get_skill_count(game, your_skill, board.turn) > 0:
+            return False
+        
+        if len(board.pieces(chess.ROOK, board.turn)) < 2:
+            return False
+        
+        moving_piece = board.piece_at(move.from_square)
+
+        # Conditions: 1. Piece is a Rook, 2. Move is NOT a capture.
+        if moving_piece and moving_piece.piece_type == chess.ROOK:
+            if not board.is_capture(move):
+                # Condition 3: Move does NOT result in a check.
+                board.push(move)
+                is_check_after_move = is_check(board, your_skill, opponent_skill)
+                board.pop()
+
+                if not is_check_after_move:
+                    extra_move_granted = True
+
+    return extra_move_granted    
+
+def apply_skills_before_start(board, skills):
     for color_key, skill in skills.items():
         color = chess.WHITE if color_key == 'white' else chess.BLACK
         if skill == 'theocracy':
@@ -318,6 +511,27 @@ def apply_skills(board, skills):
                 piece = board.piece_at(sq)
                 if piece and piece.color == color and piece.piece_type == chess.QUEEN:
                     board.remove_piece_at(sq)
+
+def increment_skill_count(gameData, skill_name, turn_color):
+    color_key = "white" if turn_color else "black"
+    
+    if skill_name not in gameData:
+        gameData[skill_name] = {"white": 0, "black": 0}
+    gameData[skill_name][color_key] += 1
+
+def get_skill_count(gameData, skill_name, turn_color):
+    color_key = "white" if turn_color else "black"
+    
+    if skill_name not in gameData:
+        gameData[skill_name] = {"white": 0, "black": 0}
+    return gameData[skill_name][color_key]
+
+def reset_skill_count(gameData, skill_name, turn_color):
+    color_key = "white" if turn_color else "black"
+    
+    if skill_name not in gameData:
+        gameData[skill_name] = {"white": 0, "black": 0}
+    gameData[skill_name][color_key] = 0
 
 @app.route('/')
 def index():
@@ -396,7 +610,7 @@ def on_join(data):
     skill = data['skill']
     join_room(room)
     if room not in games:
-        games[room] = {'board': None, 'turn': 'w', 'players': {}, 'usernames': {}, 'skills': {}}
+        games[room] = {'board': None, 'turn': 'w', 'players': {}, 'usernames': {}, 'skills': {}, 'data': {}}
     game = games[room]
     if len(game['players']) < 2:
         color = 'white' if len(game['players']) == 0 else 'black'
@@ -408,7 +622,7 @@ def on_join(data):
             emit('waiting', to=request.sid)
         if len(game['players']) == 2:
             board = chess.Board()
-            apply_skills(board, game['skills'])
+            apply_skills_before_start(board, game['skills'])
             game['board'] = board
             game['turn'] = 'w'
             for col, sid in game['players'].items():
@@ -434,6 +648,8 @@ def on_make_move(data):
         return
     turn_color = 'white' if game['turn'] == 'w' else 'black'
     opponent_color = 'black' if game['turn'] == 'w' else 'white'
+    your_skill = game['skills'][color]
+    opponent_skill = game['skills'][opponent_color]
     if color != turn_color:
         emit('message', {'msg': 'Not your turn'}, to=sid)
         return
@@ -443,7 +659,16 @@ def on_make_move(data):
     if is_promotion(game['board'], from_sq, to_sq):
         move.promotion = chess.QUEEN
     
-    if is_move_legal(game['board'], move, game['skills'][color], game['skills'][opponent_color]):
+    is_second_move = get_skill_count(game, your_skill, color) > 0
+    
+    if is_move_legal(
+        game,
+        game['board'], 
+        move, 
+        your_skill, 
+        opponent_skill,
+        second_move=is_second_move
+    ):
         # Prepare move details for client animation
         promotion = move.promotion.str.lower() if move.promotion else None
         captured_sq = None
@@ -464,16 +689,36 @@ def on_make_move(data):
             else:
                 rook_from = chess.square_name(chess.A1 if is_white else chess.A8)
                 rook_to = chess.square_name(chess.D1 if is_white else chess.D8)
+                
+        is_extra_move = check_extra_move(game, game['board'], move, your_skill, opponent_skill)
+        
         game['board'].push(move)
-        if is_checkmate(game['board'], game['skills'][color], game['skills'][opponent_color]):
-            winner = opponent_color
+        is_opponent_in_check = False
+        
+        if is_extra_move:
+            game['board'].turn = not game['board'].turn
+            
+            if your_skill in ["rampage", "blitzkrieg"]:
+                increment_skill_count(game, your_skill, color)
+                
+                if your_skill == "rampage":
+                    game["data"]["rampage"] = move.to_square
+                if your_skill == "blitzkrieg":
+                    game["data"]["blitzkrieg"] = move.to_square
+        else:
+            game['turn'] = 'b' if game['turn'] == 'w' else 'w'
+            is_opponent_in_check = is_check(game['board'], opponent_skill, your_skill)
+            if your_skill in ["rampage", "blitzkrieg"]:
+                reset_skill_count(game, your_skill, color)
+        
+        if is_checkmate(game, game['board'], opponent_skill, your_skill):
+            winner = color
             leaderboard = load_leaderboard()
             leaderboard[game['usernames'][winner]] += 1
             save_leaderboard(leaderboard)
             emit('game_over', {'winner': winner, 'msg': f'{winner.capitalize()} wins by checkmate!'}, room=room)
             del games[room]
             return
-        game['turn'] = 'b' if game['turn'] == 'w' else 'w'
         emit('move_made', {
             'fen': game['board'].fen(),
             'turn': game['turn'],
@@ -483,7 +728,8 @@ def on_make_move(data):
                 'promotion': promotion,
                 'captured_sq': captured_sq,
                 'rook_from': rook_from,
-                'rook_to': rook_to
+                'rook_to': rook_to,
+                'in_check': is_opponent_in_check
             }
         }, room=room)
 

@@ -28,5 +28,10 @@
     "name": "<LOC_SKILL_SUBJECTS_NAME>",
     "description": "<LOC_SKILL_SUBJECTS_DESC>",
     "icon": "/static/img/skills/subjects.png"
+  },
+  "entrapment": {
+    "name": "<LOC_SKILL_ENTRAPMENT_NAME>",
+    "description": "<LOC_SKILL_ENTRAPMENT_DESC>",
+    "icon": "/static/img/skills/entrapment.png"
   }
 }
