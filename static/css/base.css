@@ -1,0 +1,27 @@
+/* Global Body Styling (Applies to base.html) */
+body {
+  font-family: "Inter", sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+  transition: background 0.3s, color 0.3s;
+}
+
+/* Navbar Styling (Applies to base.html) */
+.navbar {
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 1rem 0;
+}
+
+.navbar-brand {
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background-image: linear-gradient(
+    90deg,
+    rgba(153, 153, 153, 1) 0%,
+    rgba(51, 51, 51, 1) 100%
+  );
+  color: transparent;
+  background-clip: text;
+}
