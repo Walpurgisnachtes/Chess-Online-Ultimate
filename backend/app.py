@@ -58,6 +58,9 @@ def save_leaderboard(leaderboard):
 
 
 @app.route('/')
+def no_path():
+    return redirect(url_for("home"))
+
 @app.route('/home')
 def home():
     return render_template("chess.html")
