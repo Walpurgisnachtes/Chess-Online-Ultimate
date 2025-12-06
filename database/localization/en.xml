@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GameData>
+    <LocalizedText>
+        <!-- System Messages -->
+        <Replace Tag="LOC_TOP_BAR_WELCOME_MESSAGE" Language="en">
+            <Text>Welcome, [username]</Text>
+        </Replace>
+        <Replace Tag="LOC_LOBBY_WELCOME_MESSAGE" Language="en">
+            <Text>Welcome, [username]! Choose a skill and enter a room number to play chess.</Text>
+        </Replace>
+        <Replace Tag="LOC_CHESS_WAITING_MESSAGE" Language="en">
+            <Text>Waiting for opponent...</Text>
+        </Replace>
+        <Replace Tag="LOC_NO_ACCOUNT_LOGIN" Language="en">
+            <Text>Don't have an account?</Text>
+        </Replace>
+        <Replace Tag="LOC_HAVE_ACCOUNT_LOGIN" Language="en">
+            <Text>Already have an account?</Text>
+        </Replace>
+
+        <!-- Skills -->
+
+        <Replace Tag="LOC_SKILL_NONE_NAME" Language="en">
+            <Text>None</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_NONE_DESC" Language="en">
+            <Text>Follows standard chess rules.</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_REVIVE_NAME" Language="en">
+            <Text>Revive</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_REVIVE_DESC" Language="en">
+            <Text>Once per game, revive a captured Knight, Bishop, or Rook at the end of your turn.</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_THEOCRACY_NAME" Language="en">
+            <Text>Theocracy</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_THEOCRACY_DESC" Language="en">
+            <Text>Your Bishops move like Queens, but your Queen is removed.[linebreak]Your King cannot be in check until all your Bishops are captured.</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_RAMPAGE_NAME" Language="en">
+            <Text>Rampage</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_RAMPAGE_DESC" Language="en">
+            <Text>Once per turn, a Knight can make an extra move after capturing a piece.[linebreak]The extra move cannot capture or check.</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_BLITZKRIEG_NAME" Language="en">
+            <Text>Blitzkrieg</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_BLITZKRIEG_DESC" Language="en">
+            <Text>Rooks can jump over friendly pieces.[linebreak]Once per turn, after moving a Rook without capturing or checking, you can move another Rook.</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_SUBJECTS_NAME" Language="en">
+            <Text>Subjects</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_SUBJECTS_DESC" Language="en">
+            <Text>Enemy pieces directly in front of your Pawns cannot move unless they can capture another piece or are in check.</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_ENTRAPMENT_NAME" Language="en">
+            <Text>Entrapment</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_ENTRAPMENT_DESC" Language="en">
+            <Text>Once per game, if your Knight, Bishop, Rook, or Queen is about to be captured by an enemy piece (except the King), capture that piece instead.</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_OVERTHROWN_NAME" Language="en">
+            <Text>Overthrown</Text>
+        </Replace>
+        <Replace Tag="LOC_SKILL_OVERTHROWN_DESC" Language="en">
+            <Text>Each time a player moves a piece without capturing or checking, a random piece from that player's side (except the King) is removed.</Text>
+        </Replace>
+
+        <!-- Cards -->
+        <Replace Tag="LOC_CARD_ATTACK_NAME" Language="en">
+            <Text>Attack!</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_ATTACK_DESC" Language="en">
+            <Text>Select and *Remove* 1 enemy pawn or *minor piece*.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_TAX_NAME" Language="en">
+            <Text>Predatory Taxation</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_TAX_DESC" Language="en">
+            <Text>Draw 2 cards.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_COUNTERSTRIKE_NAME" Language="en">
+            <Text>Counter Strike</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_COUNTERSTRIKE_DESC" Language="en">
+            <Text>When the enemy plays an *Attack*, *Special*, or *Trap* card:[LINEBREAK]Negate the card, the enemy recycles it.</Text>
+        </Replace>
+
+        <!-- Keywords -->
+
+        <Replace Tag="LOC_GAME_TITLE" Language="en">
+            <Text>Online Chess</Text>
+        </Replace>
+        <Replace Tag="LOC_JOIN" Language="en">
+            <Text>Join Room</Text>
+        </Replace>
+        <Replace Tag="LOC_RESIGN" Language="en">
+            <Text>Resign</Text>
+        </Replace>
+        <Replace Tag="LOC_LEADERBOARD" Language="en">
+            <Text>Leaderboard</Text>
+        </Replace>
+        <Replace Tag="LOC_RANK" Language="en">
+            <Text>Rank</Text>
+        </Replace>
+        <Replace Tag="LOC_USERNAME" Language="en">
+            <Text>Username</Text>
+        </Replace>
+        <Replace Tag="LOC_PASSWORD" Language="en">
+            <Text>Password</Text>
+        </Replace>
+        <Replace Tag="LOC_WINS" Language="en">
+            <Text>Wins</Text>
+        </Replace>
+        <Replace Tag="LOC_LOGIN" Language="en">
+            <Text>Login</Text>
+        </Replace>
+        <Replace Tag="LOC_REGISTER" Language="en">
+            <Text>Register</Text>
+        </Replace>
+        <Replace Tag="LOC_COST" Language="en">
+            <Text>Cost</Text>
+        </Replace>
+    </LocalizedText>
+</GameData>

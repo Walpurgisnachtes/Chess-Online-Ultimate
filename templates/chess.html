@@ -4,9 +4,56 @@
 Chess Online Ultimate - Chess Page
 {% endblock %}
 
+{% block css %}
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/fan-shape-cards.css') }}"
+/>
+{% endblock %}
 
 {% block content %}
-<div>
-    Hello World
+
+<div id="game-container">
+  <div id="enemy-area" class="hand-area-wrapper row">
+    
+    <div id="enemy-deck-area" class="deck-area col">
+
+    </div>
+
+    <div id="enemy-hand-area" class="hand-area col-6">
+
+    </div>
+
+  </div>
+
+  <div id="game-board">
+
+  </div>
+
+  <div id="player-area" class="hand-area-wrapper row">
+    
+    <div id="card-preview" class="card preview-card">
+      <div class="card-body">
+        <h5 class="card-title">Select a Card</h5>
+      </div>
+    </div>
+    
+    <div id="friendly-deck-area" class="deck-area">
+
+    </div>
+
+    <div id="friendly-hand-area" class="hand-area col-6">
+
+    </div>
+
+  </div>
+
 </div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chess/card-generator.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chess/main.js') }}"></script>
 {% endblock %}

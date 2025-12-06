@@ -1,0 +1,111 @@
+:root {
+  /* -- Fan Configuration -- */
+  --card-width: 150px;
+  --card-height: 220px;
+
+  --preview-card-width: calc(var(--card-width) * 2);
+  --preview-card-height: calc(var(--card-height) * 2);
+  /* How far down the pivot point is (creates the arc radius) */
+  --fan-pivot-y: 200%;
+  --enemy-pivot-y: -100%; /* Enemy hand pivot (above card) */
+}
+
+.hand-area-wrapper {
+  position: relative;
+}
+
+.hand-area {
+  position: relative;
+  width: 100%;
+  height: 350px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+/* Base Card Styling */
+.game-card {
+  position: absolute;
+  width: var(--card-width);
+  height: var(--card-height);
+  overflow: hidden;
+}
+
+/* Friendly Card Styling */
+.friendly-card {
+  bottom: 20px;
+
+  /* The Fan Physics */
+  transform-origin: 50% var(--fan-pivot-y);
+  transform: rotate(var(--rot));
+
+  transition: transform 0.2s; /* Subtle movement only */
+  cursor: pointer;
+  box-shadow: -2px 2px 10px rgba(0, 0, 0, 0.2);
+  background-color: white;
+}
+
+/* Subtle highlight on hover (Optional: shows which card is active without moving it) */
+.friendly-card:hover {
+  filter: brightness(1.1);
+  border: 1px solid #007bff;
+}
+
+.friendly-card-img-top {
+  min-height: 12vh;
+  object-fit: cover;
+}
+
+/* Enemy Card Styling */
+.enemy-card {
+  top: 20px; /* Base distance from top edge */
+
+  /* Inverted Fan Physics */
+  transform-origin: 50% var(--enemy-pivot-y);
+  transform: rotate(var(--rot));
+
+  transition: transform 0.2s;
+  box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+
+  /* Card Back Appearance */
+  background-color: darkred;
+  border: 4px solid gold;
+  border-radius: 8px;
+  /* Example pattern for the back */
+  background-image: repeating-linear-gradient(
+    45deg,
+    #a00,
+    #a00 10px,
+    darkred 10px,
+    darkred 20px
+  );
+}
+
+/* Preview Card Styling */
+.preview-card {
+  position: absolute;
+  /* Adjust based on the size of the overall #player-area container */
+  bottom: 100%; /* Float above the player hand area */
+  left: 35%;
+  transform: translateX(-50%);
+
+  /* Size of the large preview */
+  width: var(--preview-card-width);
+  min-height: var(--preview-card-height);
+
+  z-index: 1000;
+  opacity: 0; /* Hidden by default */
+  pointer-events: none; /* Let clicks pass through it */
+  transition: opacity 0.2s ease-in-out;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Helper class to show it */
+.preview-card.show {
+  opacity: 1;
+}
+
+.preview-card-img-top {
+  min-height: 20vh;
+  object-fit: cover;
+}

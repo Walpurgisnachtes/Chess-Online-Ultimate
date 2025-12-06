@@ -3,6 +3,9 @@ from flask_socketio import SocketIO, join_room, emit
 import os
 import json
 import secrets
+from typing import Dict
+
+import read_localized_text as localized_text
 
 # Directories
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -56,6 +59,23 @@ def save_leaderboard(leaderboard):
     with open(LEADERBOARD_FILE, 'w') as f:
         json.dump(leaderboard, f)
 
+def replace_placeholders_in_localized_text(texts_dict: Dict[str, Dict[str, str]]):
+    username = session.get("username", "Player")
+
+    for text_key in texts_dict:
+        text_object = texts_dict[text_key]
+        if "description" not in text_object:
+            continue
+        text_content = text_object["description"]
+        
+        replaced = text_content \
+            .replace("[linebreak]", "<br />") \
+            .replace("[username]", username)
+        
+        texts_dict[text_key]["description"] = replaced
+    
+    return texts_dict
+
 
 @app.route('/')
 def no_path():
@@ -82,6 +102,26 @@ def login():
 @app.route('/chess')
 def chess():
     return render_template("chess.html")
+
+@app.route('/api/session')
+def get_session():
+    session["username"] = "Matthew"
+    return jsonify({
+        "logged_in": "username" in session,
+        "username": session.get("username")
+    })
+    
+@app.route('/api/localization/<language>/skills', methods=['GET'])
+def get_skills(language):
+    skills = localized_text.get_all_data(localized_text.get_skills, language)
+    skills = replace_placeholders_in_localized_text(skills)
+    return jsonify(skills)
+
+@app.route('/api/localization/<language>/cards', methods=['GET'])
+def get_cards(language):
+    cards = localized_text.get_all_data(localized_text.get_cards, language)
+    cards = replace_placeholders_in_localized_text(cards)
+    return jsonify(cards)
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', debug=True)

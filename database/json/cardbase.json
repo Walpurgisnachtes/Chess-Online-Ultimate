@@ -1,0 +1,23 @@
+{
+  "attack": {
+    "name": "<LOC_CARD_ATTACK_NAME>",
+    "description": "<LOC_CARD_ATTACK_DESC>",
+    "img": "/static/img/cards/attack_card.png",
+    "cost": "5",
+    "id": "10001"
+  },
+  "tax": {
+    "name": "<LOC_CARD_TAX_NAME>",
+    "description": "<LOC_CARD_TAX_DESC>",
+    "img": "/static/img/cards/tax_card.png",
+    "cost": "1",
+    "id": "20001"
+  },
+  "counterstrike": {
+    "name": "<LOC_CARD_COUNTERSTRIKE_NAME>",
+    "description": "<LOC_CARD_COUNTERSTRIKE_DESC>",
+    "img": "/static/img/cards/counterstrike_card.png",
+    "cost": "3",
+    "id": "30001"
+  }
+}
