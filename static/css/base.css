@@ -9,9 +9,16 @@ body {
 /* Navbar Styling (Applies to base.html) */
 .navbar {
   backdrop-filter: blur(10px);
-  background-color: rgba(255, 255, 255, 0.9);
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   padding: 1rem 0;
+}
+
+html[data-bs-theme="light"] .navbar {
+  background-color: rgba(255, 255, 255, 0.9);
+}
+
+html[data-bs-theme="dark"] .navbar {
+  background-color: rgb(29 27 30 / 90%);
 }
 
 .navbar-brand {
