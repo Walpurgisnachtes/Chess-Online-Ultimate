@@ -6,6 +6,41 @@
     "cost": "5",
     "id": "10001"
   },
+  "longbowman": {
+    "name": "<LOC_CARD_LONGBOWMAN_NAME>",
+    "description": "<LOC_CARD_LONGBOWMAN_DESC>",
+    "img": "/static/img/cards/longbowman_card.png",
+    "cost": "2",
+    "id": "10002"
+  },
+  "jinete": {
+    "name": "<LOC_CARD_JINETE_NAME>",
+    "description": "<LOC_CARD_JINETE_DESC>",
+    "img": "/static/img/cards/jinete_card.png",
+    "cost": "1",
+    "id": "10003"
+  },
+  "chevalier": {
+    "name": "<LOC_CARD_CHEVALIER_NAME>",
+    "description": "<LOC_CARD_CHEVALIER_DESC>",
+    "img": "/static/img/cards/chevalier_card.png",
+    "cost": "3",
+    "id": "10004"
+  },
+  "reichsritter": {
+    "name": "<LOC_CARD_REICHSRITTER_NAME>",
+    "description": "<LOC_CARD_REICHSRITTER_DESC>",
+    "img": "/static/img/cards/reichsritter_card.png",
+    "cost": "6",
+    "id": "10005"
+  },
+  "crossbowmen": {
+    "name": "<LOC_CARD_CROSSBOWMEN_NAME>",
+    "description": "<LOC_CARD_CROSSBOWMEN_DESC>",
+    "img": "/static/img/cards/crossbowmen_card.png",
+    "cost": "2",
+    "id": "10006"
+  },
   "tax": {
     "name": "<LOC_CARD_TAX_NAME>",
     "description": "<LOC_CARD_TAX_DESC>",
@@ -13,11 +48,46 @@
     "cost": "1",
     "id": "20001"
   },
+  "windsor": {
+    "name": "<LOC_CARD_WINDSOR_CASTLE_NAME>",
+    "description": "<LOC_CARD_WINDSOR_CASTLE_DESC>",
+    "img": "/static/img/cards/windsor_castle_card.png",
+    "cost": "5",
+    "id": "20002"
+  },
   "counterstrike": {
     "name": "<LOC_CARD_COUNTERSTRIKE_NAME>",
     "description": "<LOC_CARD_COUNTERSTRIKE_DESC>",
     "img": "/static/img/cards/counterstrike_card.png",
     "cost": "3",
     "id": "30001"
+  },
+  "agincourt": {
+    "name": "<LOC_CARD_AGINCOURT_NAME>",
+    "description": "<LOC_CARD_AGINCOURT_DESC>",
+    "img": "/static/img/cards/agincourt.png",
+    "cost": "6",
+    "id": "40001"
+  },
+  "reconquista": {
+    "name": "<LOC_CARD_RECONQUISTA_NAME>",
+    "description": "<LOC_CARD_RECONQUISTA_DESC>",
+    "img": "/static/img/cards/reconquista_card.png",
+    "cost": "6",
+    "id": "40002"
+  },
+  "curzola": {
+    "name": "<LOC_CARD_CURZOLA_NAME>",
+    "description": "<LOC_CARD_CURZOLA_DESC>",
+    "img": "/static/img/cards/curzola_card.png",
+    "cost": "6",
+    "id": "40003"
+  },
+  "constantinople": {
+    "name": "<LOC_CARD_CONSTANTINOPLE_NAME>",
+    "description": "<LOC_CARD_CONSTANTINOPLE_DESC>",
+    "img": "/static/img/cards/constantinople_card.png",
+    "cost": "6",
+    "id": "40004"
   }
 }

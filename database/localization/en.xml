@@ -88,6 +88,66 @@
         <Replace Tag="LOC_CARD_COUNTERSTRIKE_DESC" Language="en">
             <Text>When the enemy plays an *Attack*, *Special*, or *Trap* card:[LINEBREAK]Negate the card, the enemy recycles it.</Text>
         </Replace>
+        <Replace Tag="LOC_CARD_LONGBOWMAN_NAME" Language="en">
+            <Text>Longbowmen</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_LONGBOWMAN_DESC" Language="en">
+            <Text>*Remove* a piece who is the only one in its column.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_JINETE_NAME" Language="en">
+            <Text>Jinetes</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_JINETE_DESC" Language="en">
+            <Text>This turn, your knights can move like rook, but you cannot captures the enemy king.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_CHEVALIER_NAME" Language="en">
+            <Text>Chevaliers</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_CHEVALIER_DESC" Language="en">
+            <Text>If a friendly piece is the only one in its column, *change* it into a knight.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_REICHSRITTER_NAME" Language="en">
+            <Text>Reichsritter</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_REICHSRITTER_DESC" Language="en">
+            <Text>Each of your knights may move once this turn. Whenever one of your knights captures an enemy piece, gain 2 prestige and draw 1 card.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_CROSSBOWMEN_NAME" Language="en">
+            <Text>Crossbowmen</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_CROSSBOWMEN_DESC" Language="en">
+            <Text>Target 1 enemy piece. It is removed after be targeted by "Crossbowmen" again.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_WINDSOR_CASTLE_NAME" Language="en">
+            <Text>Windsor Castle</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_WINDSOR_CASTLE_DESC" Language="en">
+            <Text>Your king will not be captured in 3 turns.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_AGINCOURT_NAME" Language="en">
+            <Text>Battle of Agincourt</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_AGINCOURT_DESC" Language="en">
+            <Text>If a piece is the only one in its column, it may move only 1 square. It cannot move if it is a knight.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_RECONQUISTA_NAME" Language="en">
+            <Text>Reconquista</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_RECONQUISTA_DESC" Language="en">
+            <Text>Double the prestige cost of all cards for both players.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_CURZOLA_NAME" Language="en">
+            <Text>Battle of Curzola</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_CURZOLA_DESC" Language="en">
+            <Text>At the start of your turn, shuffle 1 "Crossbowmen" into your deck.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_CONSTANTINOPLE_NAME" Language="en">
+            <Text>Fall of Constantinople</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_CONSTANTINOPLE_DESC" Language="en">
+            <Text>*Removes* and *revives* all enemy pawns, *change* them into rooks. All rooks can only move 1 square each turn.</Text>
+        </Replace>
 
         <!-- Keywords -->
 
