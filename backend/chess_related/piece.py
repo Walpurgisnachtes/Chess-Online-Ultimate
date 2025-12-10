@@ -53,6 +53,7 @@ class BasePiece:
         piece_name: PieceName,
         move_rule: List[PieceName],
         *,
+        spawning_point: str = "",
         is_capturable: bool = True,
         is_lose_on_capture: bool = False,
         is_removable: bool = True
@@ -60,6 +61,7 @@ class BasePiece:
         self._name = piece_name.value
         self._move_rule = [p.value for p in move_rule]
         self.status: List[StatusEffect] = []
+        self.spawning_point = spawning_point
         self.is_capturable = is_capturable
         self.is_lose_on_capture = is_lose_on_capture
         self.is_removable = is_removable
