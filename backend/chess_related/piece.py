@@ -16,9 +16,9 @@ Features:
 
 from __future__ import annotations
 
+from typing import List, Optional
 from pathlib import Path
 import sys
-from typing import List, Optional
 
 # --------------------------------------------------------------------------- #
 # Package setup for development (allows running file directly)
@@ -28,68 +28,8 @@ if __name__ == "__main__" and (__package__ is None or __package__ == ""):
     sys.path.append(parent_dir)
     __package__ = "backend.chess_related"
 
+from status_effect import StatusEffect
 from misc.enums import PieceName, StatusCountdownMethod
-
-
-class StatusEffect:
-    """
-    Represents a single status effect applied to a piece.
-
-    Supports stacking (e.g., multiple poison layers), timed duration,
-    and configurable countdown behavior.
-
-    Attributes:
-        name (str): Unique identifier of the status (e.g., "poisoned", "promotable")
-        stack (int): Number of times this status is stacked (default: 1)
-        duration (int): Number of turns remaining (0 = permanent)
-        countdown_method (StatusCountdownMethod): When the duration decreases
-    """
-
-    def __init__(
-        self,
-        name: str,
-        stack: int = 1,
-        duration: int = 0,
-        countdown_method: StatusCountdownMethod = StatusCountdownMethod.ON_TURN_END
-    ) -> None:
-        """
-        Create a new status effect.
-
-        Args:
-            name: Identifier for the status
-            stack: Stack count (useful for intensifying effects)
-            duration: Turns remaining (0 = indefinite)
-            countdown_method: When to decrement duration
-        """
-        self.name = name
-        self.stack = max(1, stack)  # Ensure at least 1
-        self.duration = duration
-        self.countdown_method = countdown_method
-
-    def decrement_duration(self) -> bool:
-        """
-        Decrement duration if applicable.
-
-        Returns:
-            bool: True if the status has expired (duration reached 0)
-        """
-        if self.duration > 0:
-            self.duration -= 1
-            return self.duration <= 0
-        return False
-
-    def __repr__(self) -> str:
-        if self.duration > 0:
-            return f"StatusEffect({self.name!r}, stack={self.stack}, expires_in={self.duration})"
-        return f"StatusEffect({self.name!r}, stack={self.stack})"
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, StatusEffect):
-            return False
-        return self.name == other.name
-
-    def __hash__(self) -> int:
-        return hash(self.name)
 
 
 class BasePiece:
@@ -136,19 +76,18 @@ class BasePiece:
 
     # ────────────────────────────── Status Management ────────────────────────────── #
 
-    def add_status(
-        self,
-        name: str,
-        stack: int = 1,
-        duration: int = 0,
-        countdown_method: StatusCountdownMethod = StatusCountdownMethod.ON_TURN_END
-    ) -> StatusEffect:
+    def add_status(self, status: StatusEffect) -> StatusEffect:
         """
         Add or stack a status effect.
 
         Returns:
             StatusEffect: The created or updated effect
         """
+        name = status.name
+        stack = status.stack
+        duration = status.duration
+        countdown_method = status.countdown_method
+        
         existing = self.get_status_effect(name)
         if existing:
             existing.stack += stack
@@ -157,9 +96,8 @@ class BasePiece:
                 existing.countdown_method = countdown_method
             return existing
 
-        effect = StatusEffect(name, stack, duration, countdown_method)
-        self.status.append(effect)
-        return effect
+        self.status.append(status)
+        return status
 
     def remove_status(self, name: str, stacks: int = 0) -> int:
         """
@@ -263,22 +201,18 @@ class PawnPiece(BasePiece):
     def __init__(self) -> None:
         super().__init__(PieceName.PAWN, [PieceName.PAWN])
 
+class NonePiece(BasePiece):
+    def __init__(self):
+        super().__init__(PieceName.UNKNOWN, [])
 
 # ────────────────────────────────────────────────────────────────────────────── #
 # Demo / Test
 # ────────────────────────────────────────────────────────────────────────────── #
 if __name__ == "__main__":
     pawn = PawnPiece()
-    pawn.add_status("en_passant_vulnerable", duration=1)
-    pawn.add_status("poisoned", stack=2, duration=3)
+    pawn.add_status(StatusEffect("en_passant_vulnerable", duration=-1))
+    pawn.add_status(StatusEffect("poisoned", stack=2, duration=3))
+    
 
     print("=== Initial State ===")
-    print(pawn.detail())
-
-    print("\n--- Turn 1 Ends ---")
-    pawn.trigger_turn_end()
-    print(pawn.detail())
-
-    print("\n--- Turn 2 Ends ---")
-    pawn.trigger_turn_end()
     print(pawn.detail())
