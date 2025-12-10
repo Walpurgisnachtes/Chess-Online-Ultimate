@@ -3,58 +3,109 @@ Chess Variant Piece System
 ==========================
 
 A flexible and extensible framework for defining chess-like pieces with custom
-movement rules, capture behavior, and game-specific properties. Designed for
-chess variants (e.g., Chess960, Crazyhouse, Shogi-inspired games, or completely
-custom board games).
+movement rules, capture behavior, and rich status effect system. Designed for
+advanced chess variants (Chess960, Crazyhouse, Capablanca, Shogi-inspired, or
+fully custom fairy chess engines).
 
 Features:
-- Piece movement defined via composition of base movement types
-- Configurable capture rules (capturable, lose-on-capture, removable)
-- Enum-based piece naming for type safety
-- Easy extension for new piece types and rules
-
-Example:
-    >>> queen = QueenPiece()
-    >>> print(queen)
-    Queen
-    >>> queen.move_rule
-    ['bishop', 'rook']
+- Movement defined via composition of primitive move types
+- Full control over capture semantics (capturable, game-ending, removable)
+- Powerful StatusEffect system with stacking, duration, and countdown control
+- Clean separation of concerns and easy extension
 """
 
 from __future__ import annotations
 
+from pathlib import Path
+import sys
 from typing import List, Optional
-from random import shuffle, randrange, sample
-from copy import deepcopy
-from enum import StrEnum, auto
+
+# --------------------------------------------------------------------------- #
+# Package setup for development (allows running file directly)
+# --------------------------------------------------------------------------- #
+if __name__ == "__main__" and (__package__ is None or __package__ == ""):
+    parent_dir = str(Path(__file__).resolve().parents[1])
+    sys.path.append(parent_dir)
+    __package__ = "backend.chess_related"
+
+from misc.enums import PieceName, StatusCountdownMethod
 
 
-class PieceName(StrEnum):
-    """Enum representing standard and special chess piece types."""
-    KING = "king"
-    QUEEN = "queen"
-    BISHOP = "bishop"
-    KNIGHT = "knight"
-    ROOK = "rook"
-    PAWN = "pawn"
-    UNKNOWN = auto()  # Placeholder for undefined or custom pieces
+class StatusEffect:
+    """
+    Represents a single status effect applied to a piece.
+
+    Supports stacking (e.g., multiple poison layers), timed duration,
+    and configurable countdown behavior.
+
+    Attributes:
+        name (str): Unique identifier of the status (e.g., "poisoned", "promotable")
+        stack (int): Number of times this status is stacked (default: 1)
+        duration (int): Number of turns remaining (0 = permanent)
+        countdown_method (StatusCountdownMethod): When the duration decreases
+    """
+
+    def __init__(
+        self,
+        name: str,
+        stack: int = 1,
+        duration: int = 0,
+        countdown_method: StatusCountdownMethod = StatusCountdownMethod.ON_TURN_END
+    ) -> None:
+        """
+        Create a new status effect.
+
+        Args:
+            name: Identifier for the status
+            stack: Stack count (useful for intensifying effects)
+            duration: Turns remaining (0 = indefinite)
+            countdown_method: When to decrement duration
+        """
+        self.name = name
+        self.stack = max(1, stack)  # Ensure at least 1
+        self.duration = duration
+        self.countdown_method = countdown_method
+
+    def decrement_duration(self) -> bool:
+        """
+        Decrement duration if applicable.
+
+        Returns:
+            bool: True if the status has expired (duration reached 0)
+        """
+        if self.duration > 0:
+            self.duration -= 1
+            return self.duration <= 0
+        return False
+
+    def __repr__(self) -> str:
+        if self.duration > 0:
+            return f"StatusEffect({self.name!r}, stack={self.stack}, expires_in={self.duration})"
+        return f"StatusEffect({self.name!r}, stack={self.stack})"
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, StatusEffect):
+            return False
+        return self.name == other.name
+
+    def __hash__(self) -> int:
+        return hash(self.name)
 
 
 class BasePiece:
     """
-    Base class for all game pieces.
+    Base class for all game pieces in chess variants.
 
-    Defines core attributes and behavior shared across all piece types.
-    Movement capability is defined by a list of base movement rules
-    (e.g., a Queen moves as Bishop + Rook).
+    Uses compositional movement rules and a rich status effect system
+    supporting stacking and timed effects.
 
     Attributes:
-        name (str): Human-readable name of the piece (e.g., "queen")
-        move_rule (List[str]): List of base movement types this piece can use
-        status (List[str]): Game-specific status flags (e.g., "promoted", "checked")
-        is_capturable (bool): Can this piece be captured by opponents?
-        is_lose_on_capture (bool): Does capturing this piece end the game? (e.g., King)
-        is_removable (bool): Can this piece be permanently removed from play?
+        name (str): Lowercase piece name (e.g., "queen")
+        move_rule (List[str]): Primitive movement types this piece uses
+        status (List[StatusEffect]): Active status effects with metadata
+        is_capturable (bool): Can be captured
+        is_lose_on_capture (bool): Game ends if captured (e.g., king)
+        is_removable (bool): Can be permanently removed
     """
 
     def __init__(
@@ -66,147 +117,168 @@ class BasePiece:
         is_lose_on_capture: bool = False,
         is_removable: bool = True
     ) -> None:
-        """
-        Initialize a new piece.
-
-        Args:
-            piece_name: The type/name of the piece
-            move_rule: List of primitive movement types this piece combines
-            is_capturable: Whether opponents can capture this piece
-            is_lose_on_capture: True for kings — game ends if captured
-            is_removable: Whether the piece can be taken off the board permanently
-        """
         self._name = piece_name.value
         self._move_rule = [p.value for p in move_rule]
-        self.status: List[str] = []
+        self.status: List[StatusEffect] = []
         self.is_capturable = is_capturable
         self.is_lose_on_capture = is_lose_on_capture
         self.is_removable = is_removable
 
     @property
     def name(self) -> str:
-        """Get the name of the piece (e.g., 'queen')."""
+        """Lowercase name of the piece."""
         return self._name
 
     @property
     def move_rule(self) -> List[str]:
-        """Get the list of base movement rules this piece uses."""
+        """List of primitive movement types."""
         return self._move_rule
 
-    def add_status(self, status: str) -> None:
-        """Add a gameplay status flag to this piece."""
-        if status not in self.status:
-            self.status.append(status)
+    # ────────────────────────────── Status Management ────────────────────────────── #
 
-    def remove_status(self, status: str) -> None:
-        """Remove a gameplay status flag from this piece."""
-        self.status = [s for s in self.status if s != status]
+    def add_status(
+        self,
+        name: str,
+        stack: int = 1,
+        duration: int = 0,
+        countdown_method: StatusCountdownMethod = StatusCountdownMethod.ON_TURN_END
+    ) -> StatusEffect:
+        """
+        Add or stack a status effect.
 
-    def has_status(self, status: str) -> bool:
-        """Check if the piece currently has a specific status."""
-        return status in self.status
+        Returns:
+            StatusEffect: The created or updated effect
+        """
+        existing = self.get_status_effect(name)
+        if existing:
+            existing.stack += stack
+            if duration > existing.duration:
+                existing.duration = duration
+                existing.countdown_method = countdown_method
+            return existing
+
+        effect = StatusEffect(name, stack, duration, countdown_method)
+        self.status.append(effect)
+        return effect
+
+    def remove_status(self, name: str, stacks: int = 0) -> int:
+        """
+        Remove stacks of a status.
+
+        Args:
+            name: Status to reduce/remove
+            stacks: Number of stacks to remove (0 = remove all)
+
+        Returns:
+            int: Remaining stacks (0 if fully removed)
+        """
+        effect = self.get_status_effect(name)
+        if not effect:
+            return 0
+
+        if stacks <= 0 or stacks >= effect.stack:
+            self.status = [s for s in self.status if s.name != name]
+            return 0
+
+        effect.stack -= stacks
+        return effect.stack
+
+    def has_status(self, name: str) -> bool:
+        """Check if piece has a status (any stack count)."""
+        return any(s.name == name for s in self.status)
+
+    def get_status_effect(self, name: str) -> Optional[StatusEffect]:
+        """Get the StatusEffect object by name, if present."""
+        for effect in self.status:
+            if effect.name == name:
+                return effect
+        return None
+
+    def get_status_stack(self, name: str) -> int:
+        """Get current stack count of a status (0 if absent)."""
+        effect = self.get_status_effect(name)
+        return effect.stack if effect else 0
+
+    # ────────────────────────────── Representation ────────────────────────────── #
 
     def __str__(self) -> str:
-        """Return capitalized name for display (e.g., 'Queen')."""
         return self.name.capitalize()
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.name!r})"
+        return f"{self.__class__.__name__}(name={self.name!r})"
 
     def detail(self) -> str:
-        """
-        Return a detailed string representation of the piece.
+        """Rich debug representation showing all status details."""
+        lines = [
+            f"{self}",
+            f"  Move rule(s): {', '.join(self.move_rule) or 'None'}",
+            "  Status effects:"
+        ]
 
-        Useful for debugging and logging in variant engines.
-        """
-        return f"""
-{self}
-    Move rule(s): {', '.join(self.move_rule) or 'None'}
-    Status: {', '.join(self.status) or 'None'}
-    Capturable: {self.is_capturable}
-    Game-ending on capture: {self.is_lose_on_capture}
-    Removable from board: {self.is_removable}
-""".strip()
+        if not self.status:
+            lines.append("    None")
+        else:
+            for s in self.status:
+                duration_str = f" ({s.duration} turns)" if s.duration > 0 else " (permanent)"
+                lines.append(f"    • {s.name} [x{s.stack}]{duration_str}")
+                if s.countdown_method != StatusCountdownMethod.ON_TURN_END:
+                    lines[-1] += f" [{s.countdown_method.value}]"
 
+        lines += [
+            f"  Capturable: {self.is_capturable}",
+            f"  Game-ending on capture: {self.is_lose_on_capture}",
+            f"  Removable: {self.is_removable}"
+        ]
+
+        return "\n".join(lines)
+
+
+# ────────────────────────────────────────────────────────────────────────────── #
+# Standard Chess Pieces
+# ────────────────────────────────────────────────────────────────────────────── #
 
 class KingPiece(BasePiece):
-    """Standard king piece — game ends if captured."""
-
+    """King — loss condition piece."""
     def __init__(self) -> None:
-        super().__init__(
-            piece_name=PieceName.KING,
-            move_rule=[PieceName.KING],
-            is_capturable=True,
-            is_lose_on_capture=True,
-            is_removable=False
-        )
-
+        super().__init__(PieceName.KING, [PieceName.KING], is_lose_on_capture=True, is_removable=False)
 
 class QueenPiece(BasePiece):
-    """Standard queen — combines rook and bishop movement."""
-
+    """Queen = Rook + Bishop."""
     def __init__(self) -> None:
-        super().__init__(
-            piece_name=PieceName.QUEEN,
-            move_rule=[PieceName.BISHOP, PieceName.ROOK]
-        )
-
+        super().__init__(PieceName.QUEEN, [PieceName.BISHOP, PieceName.ROOK])
 
 class BishopPiece(BasePiece):
-    """Standard bishop — diagonal movement only."""
-
     def __init__(self) -> None:
-        super().__init__(
-            piece_name=PieceName.BISHOP,
-            move_rule=[PieceName.BISHOP]
-        )
-
+        super().__init__(PieceName.BISHOP, [PieceName.BISHOP])
 
 class KnightPiece(BasePiece):
-    """Standard knight — L-shaped jumps."""
-
     def __init__(self) -> None:
-        super().__init__(
-            piece_name=PieceName.KNIGHT,
-            move_rule=[PieceName.KNIGHT]
-        )
-
+        super().__init__(PieceName.KNIGHT, [PieceName.KNIGHT])
 
 class RookPiece(BasePiece):
-    """Standard rook — horizontal and vertical movement."""
-
     def __init__(self) -> None:
-        super().__init__(
-            piece_name=PieceName.ROOK,
-            move_rule=[PieceName.ROOK]
-        )
-
+        super().__init__(PieceName.ROOK, [PieceName.ROOK])
 
 class PawnPiece(BasePiece):
-    """Standard pawn — forward movement, diagonal capture."""
-
     def __init__(self) -> None:
-        super().__init__(
-            piece_name=PieceName.PAWN,
-            move_rule=[PieceName.PAWN]
-        )
+        super().__init__(PieceName.PAWN, [PieceName.PAWN])
 
 
-# --------------------------------------------------------------------------- #
+# ────────────────────────────────────────────────────────────────────────────── #
 # Demo / Test
-# --------------------------------------------------------------------------- #
+# ────────────────────────────────────────────────────────────────────────────── #
 if __name__ == "__main__":
-    queen = QueenPiece()
-    king = KingPiece()
     pawn = PawnPiece()
+    pawn.add_status("en_passant_vulnerable", duration=1)
+    pawn.add_status("poisoned", stack=2, duration=3)
 
-    print("=== Piece Details ===")
-    print(queen.detail())
-    print(king.detail())
+    print("=== Initial State ===")
     print(pawn.detail())
 
-    # Example of status tracking
-    pawn.add_status("promotable")
-    pawn.add_status("en_passant_vulnerable")
-    print("Pawn with status:")
+    print("\n--- Turn 1 Ends ---")
+    pawn.trigger_turn_end()
+    print(pawn.detail())
+
+    print("\n--- Turn 2 Ends ---")
+    pawn.trigger_turn_end()
     print(pawn.detail())
