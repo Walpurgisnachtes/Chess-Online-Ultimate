@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from flask_socketio import SocketIO, join_room, emit
+from copy import deepcopy
 import os
 import json
 import secrets
@@ -91,6 +92,9 @@ def get_data_with_localization(language: str, get_method: Callable[..., Dict[str
     data = replace_placeholders_in_localized_text(data, username)
     return data
 
+def change_json_card_object_into_card_id_list(cards: List) -> List[str]:
+    return [card["id"] for card in cards]
+
 
 def server_start():
     """
@@ -165,7 +169,6 @@ def chess():
 
 @app.route('/api/session')
 def get_session():
-    session["username"] = "Matthew"
     return jsonify({
         "logged_in": "username" in session,
         "username": session.get("username")
@@ -190,25 +193,81 @@ def get_cards(language: str):
 
 @app.route('/api/get_deck')
 def get_deck():
+    username = session.get("username", "Player")
     try:
         with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'r') as f:
             decks = json.load(f)
-        return jsonify(decks)
+        return jsonify(decks[username])
     except:
         return jsonify({})
 
 @app.route('/api/save_deck', methods=['POST'])
 def save_deck():
     data = request.get_json()
-    decks = session.get('user_decks', [])
+    username = session.get("username", "Player")
     
-    if data.get('id') is not None and data['id'] < len(decks):
-        decks[data['id']] = data
-    else:
-        decks.append(data)
+    deck_id = data["id"]
+    deck_name = data["name"]
+    deck_cards = change_json_card_object_into_card_id_list(data["cards"])
     
-    session['user_decks'] = decks
-    return jsonify({"success": True, "decks": decks})
+    with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'r') as f:
+        try:
+            decks = json.load(f)
+        except:
+            decks = {}
+    
+        if username in decks:
+            player_original_decks = decks[username]
+            if deck_id < player_original_decks.__len__():
+                player_original_decks[deck_id] = {
+                    "name": deck_name,
+                    "deck": deck_cards
+                }
+            else:
+                player_original_decks.append({
+                    "name": deck_name,
+                    "deck": deck_cards
+                })
+        else:
+            decks[username] = [{
+                "name": deck_name,
+                "deck": deck_cards
+            }]
+        
+    with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'w') as f:
+        json.dump(decks, f)
+    
+    return jsonify({"success": True, "decks": decks[username]})
+
+@app.route('/api/delete_deck', methods=['POST'])
+def delete_deck():
+    data = request.get_json()
+    username = session.get("username", "Player")
+    
+    try:
+        with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'r') as f:
+            try:
+                decks = json.load(f)
+            except:
+                decks = {}
+                
+            deck_id = int(data["id"])
+                
+        
+            if username in decks:
+                player_original_decks = decks[username]
+                
+                if deck_id < 0 or deck_id >= len(player_original_decks):
+                    return jsonify({"success": False, "error": "Invalid deck ID"})
+                
+                del player_original_decks[deck_id]
+        
+        with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'w') as f:
+            json.dump(decks, f)
+    
+        return jsonify({"success": True, "decks": decks[username]})
+    except:
+        return jsonify({"success": False, "error": "Invalid deck ID"})
 
 @app.route('/chess/<room>')
 def chess_room(room):

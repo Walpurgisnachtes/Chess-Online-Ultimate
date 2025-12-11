@@ -3,8 +3,8 @@
 {% block title %}Deck Builder — Chess Online Ultimate{% endblock %}
 
 {% block css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/deckbuilder.css') }}"/>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/fan-shape-cards.css') }}"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/deckbuilder.css') }}"/>
 {% endblock %}
 
 {% block content %}
@@ -31,6 +31,7 @@
       <div class="d-flex align-items-center float-end">
         <span id="deckCount" class="badge bg-primary fs-5 px-px-3">0 / 30</span>
         <button id="saveDeckBtn" class="btn btn-success ms-3 px-4" disabled>Save Deck</button>
+        <button id="deleteDeckBtn" class="btn btn-danger ms-3 px-4">Delete Deck</button>
       </div>
     </div>
 
@@ -52,11 +53,12 @@
           <div id="currentDeck" class="col"></div>
         </div>
 
-        <div id="largePreview" class="text-center" style="display:none;">
-          <div class="preview-card show d-inline-block">
-            <img id="previewImg" src="" class="card-img-top">
+        <div id="largePreview" class="text-center">
+          <div id="deck-builder-preview-card" class="card deck-preview-card collection-card game-card d-inline-block">
+            <div id="previewCostBadge" class="card-cost-badge"></div>
+            <img id="previewImg" src="" class="deck-preview-card-img-top card-img-top">
             <div class="card-body">
-              <h3 id="previewName" class="card-title mb-2"></h3>
+              <h3 id="previewName" class="card-title my-5"></h3>
               <p id="previewDesc" class="card-text"></p>
             </div>
           </div>
@@ -68,5 +70,6 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/chess/card-generator.js') }}"></script>
 <script src="{{ url_for('static', filename='js/deckbuilder.js') }}"></script>
 {% endblock %}

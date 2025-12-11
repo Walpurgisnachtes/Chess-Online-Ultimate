@@ -110,13 +110,13 @@
             <Text>Reichsritter</Text>
         </Replace>
         <Replace Tag="LOC_CARD_REICHSRITTER_DESC" Language="en">
-            <Text>Each of your knights may move once this turn. Whenever one of your knights captures an enemy piece, gain 2 prestige and draw 1 card.</Text>
+            <Text>Each of your knights may move once this turn.[LINEBREAK]Whenever one of your knights captures an enemy piece, gain 2 prestige and draw 1 card.</Text>
         </Replace>
         <Replace Tag="LOC_CARD_CROSSBOWMEN_NAME" Language="en">
             <Text>Crossbowmen</Text>
         </Replace>
         <Replace Tag="LOC_CARD_CROSSBOWMEN_DESC" Language="en">
-            <Text>Target 1 enemy piece. It is removed after be targeted by "Crossbowmen" again.</Text>
+            <Text>Target 1 enemy piece.[LINEBREAK]It is removed after be targeted by "Crossbowmen" again.</Text>
         </Replace>
         <Replace Tag="LOC_CARD_WINDSOR_CASTLE_NAME" Language="en">
             <Text>Windsor Castle</Text>
@@ -128,7 +128,7 @@
             <Text>Battle of Agincourt</Text>
         </Replace>
         <Replace Tag="LOC_CARD_AGINCOURT_DESC" Language="en">
-            <Text>If a piece is the only one in its column, it may move only 1 square. It cannot move if it is a knight.</Text>
+            <Text>If a piece is the only one in its column, it may move only 1 square.[LINEBREAK]It cannot move if it is a knight.</Text>
         </Replace>
         <Replace Tag="LOC_CARD_RECONQUISTA_NAME" Language="en">
             <Text>Reconquista</Text>
@@ -146,7 +146,7 @@
             <Text>Fall of Constantinople</Text>
         </Replace>
         <Replace Tag="LOC_CARD_CONSTANTINOPLE_DESC" Language="en">
-            <Text>*Removes* and *revives* all enemy pawns, *change* them into rooks. All rooks can only move 1 square each turn.</Text>
+            <Text>*Removes* and *revives* all enemy pawns, *change* them into rooks.[LINEBREAK]All rooks can only move 1 square each turn.</Text>
         </Replace>
 
         <!-- Keywords -->

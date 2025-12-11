@@ -35,7 +35,8 @@
 .deck-nav-card {
   transition: all 0.25s ease;
   cursor: pointer;
-  border: 2px solid transparent;
+  border: 2px solid var(--bs-card-border-color);
+  background: var(--bs-light);
 }
 .deck-nav-card:hover {
   transform: translateY(-8px);
@@ -82,6 +83,7 @@
 .collection-card-img-top {
   height: 12vh;
   object-fit: cover;
+  padding: 2px;
 }
 
 /* Deck Cards in Builder */
@@ -90,14 +92,33 @@
 }
 .deck-card .count-badge {
   position: absolute;
-  bottom: 20%;
-  left: 5%;
-  background: rgba(0, 0, 0, 0.75);
+  min-width: 6.3%;
+  bottom: 15%;
+  right: 10%;
+  background: var(--bs-gray);
   color: white;
-  font-size: 11px;
+  font-size: 0.8em;
   font-weight: bold;
   padding: 3px 8px;
   border-radius: 12px;
+}
+.deck-card .count-badge[data-card-type="attack"] {
+  background: var(--bs-red);
+}
+.deck-card .count-badge[data-card-type="special"] {
+  background: var(--bs-teal);
+}
+.deck-card .count-badge[data-card-type="trap"] {
+  background: var(--bs-indigo);
+}
+.deck-card .count-badge[data-card-type="battlefield"] {
+  background: var(--bs-gray);
+}
+.deck-card .card-cost-badge {
+  top: 8%;
+  left: 5%;
+  width: 8%;
+  height: 80%;
 }
 .remove-btn {
   position: absolute;
@@ -119,9 +140,42 @@
   opacity: 1;
 }
 
+/* Deck builder preview Card Styling */
+.deck-preview-card {
+  position: absolute;
+  bottom: 20%;
+  left: 40%;
+  transform: translateX(-50%);
+  width: calc(var(--preview-card-width) * 2);
+  min-height: calc(var(--preview-card-height) * 2);
+  z-index: 1000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+/* Helper class to show it */
+.deck-preview-card.show {
+  opacity: 1;
+}
+
+.deck-preview-card-img-top {
+  height: 50vh;
+  object-fit: cover;
+  padding: 7px;
+}
+
+.deck-preview-card .card-cost-badge {
+  font-size: 4em;
+}
+
 /* Dark mode support */
 html[data-bs-theme="dark"] .collection-area,
 html[data-bs-theme="dark"] .deck-area {
   background: #1a1d21;
   border-color: #444;
+}
+html[data-bs-theme="dark"] .deck-nav-card {
+  background: var(--bs-dark);
 }

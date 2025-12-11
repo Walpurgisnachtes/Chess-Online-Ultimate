@@ -94,6 +94,31 @@
       </div>
     </nav>
 
+    <!-- Accessible Global Modal -->
+    <div class="modal fade" 
+        id="globalModal" 
+        tabindex="-1" 
+        aria-labelledby="globalModalLabel" 
+        aria-modal="true" 
+        role="dialog">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="globalModalLabel">Title</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="modalBody">
+            <p>Message</p>
+          </div>
+          <div class="modal-footer" id="modalFooter">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="button" class="btn btn-primary" id="modalConfirmBtn">Confirm</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
     <!-- Centered Error Popup -->
     <div id="errorOverlay" class="error-overlay">
       <div class="error-popup">
@@ -116,6 +141,7 @@
     <script src="{{ url_for('static', filename='js/base-color-mode-toggler.js') }}"></script>
     <script src="{{ url_for('static', filename='js/color-mode-toggler.js') }}"></script>
     <script src="{{ url_for('static', filename='js/error-toast.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modal-manager.js') }}"></script>
 
     {% block scripts %} {% endblock %}
   </body>

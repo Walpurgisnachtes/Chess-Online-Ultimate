@@ -44,7 +44,7 @@ class CardGenerator {
       `;
 
       // ────── PRE-BUILD PREVIEW HTML ONCE ──────
-      const description = this.#replaceCardTextSpecialCharacters(data.description || "");
+      const description = this.replaceCardTextSpecialCharacters(data.description || "");
 
       const previewHTML = `
         ${data.img ? `<img src="${data.img}" class="preview-card-img-top card-img-top pt-3" loading="lazy">` : ""}
@@ -95,11 +95,10 @@ class CardGenerator {
 
   /**
    * Replaces special tokens in card description.
-   * @private
    * @param {string} text
    * @returns {string}
    */
-  #replaceCardTextSpecialCharacters(text) {
+  replaceCardTextSpecialCharacters(text) {
     if (!text) return "";
     let result = text.replace(/\[LINEBREAK\]/g, "<br>");
     result = result.replace(/\*(.+?)\*/g, '<strong>$1</strong>');
