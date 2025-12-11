@@ -1,0 +1,42 @@
+/* =======================================================
+   MAKE THE ENTIRE PAGE NON-SCROLLABLE (perfect for card games)
+   ======================================================= */
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* This disables scrolling completely */
+  touch-action: none; /* Prevents touch scrolling on mobile */
+  -webkit-overflow-scrolling: touch;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+/* The main container from base.html – make it fill the screen */
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 1rem;
+}
+
+/* Game container – takes all remaining space */
+#game-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1rem 0;
+}
+
+* {
+  scrollbar-width: none;          /* Firefox */
+}
+*::-webkit-scrollbar {
+  display: none;                  /* Chrome, Safari, Edge */
+}

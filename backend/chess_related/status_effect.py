@@ -1,11 +1,3 @@
-from pathlib import Path
-import sys
-
-if __name__ == "__main__" and (__package__ is None or __package__ == ""):
-    parent_dir = str(Path(__file__).resolve().parents[1])
-    sys.path.append(parent_dir)
-    __package__ = "backend.chess_related"
-
 from misc.enums import StatusCountdownMethod
 
 class StatusEffect:

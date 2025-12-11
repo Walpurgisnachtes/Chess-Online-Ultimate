@@ -17,7 +17,7 @@
 .hand-area {
   position: relative;
   width: 100%;
-  height: 350px;
+  height: 240px;
   display: flex;
   justify-content: center;
   align-items: flex-end;
@@ -33,7 +33,7 @@
 
 /* Friendly Card Styling */
 .friendly-card {
-  bottom: 20px;
+  bottom: 100px;
 
   /* The Fan Physics */
   transform-origin: 50% var(--fan-pivot-y);
@@ -58,7 +58,7 @@
 
 /* Enemy Card Styling */
 .enemy-card {
-  top: 20px; /* Base distance from top edge */
+  top: 60px; /* Base distance from top edge */
 
   /* Inverted Fan Physics */
   transform-origin: 50% var(--enemy-pivot-y);
@@ -85,8 +85,8 @@
 .preview-card {
   position: absolute;
   /* Adjust based on the size of the overall #player-area container */
-  bottom: 100%; /* Float above the player hand area */
-  left: 35%;
+  bottom: 130%;
+  left: 10%;
   transform: translateX(-50%);
 
   /* Size of the large preview */

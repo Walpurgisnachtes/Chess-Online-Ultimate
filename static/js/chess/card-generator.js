@@ -1,63 +1,64 @@
+/**
+ * CardGenerator – responsible for rendering player and enemy hands
+ * with a smooth fan layout and a non-spammy card preview.
+ */
 class CardGenerator {
   /**
-   * @param {Array} cardsData - Array of objects { title, text, img }
+   * @private
+   * @type {Map<number, string>} Cache of full preview HTML strings keyed by card index
+   */
+  #previewCache = new Map();
+
+  /**
+   * Generates the player's hand in a fan shape and pre-builds preview HTML.
+   * @param {Array<{name:string, description:string, img:string}>} cardsData
    */
   generateHandCards(cardsData) {
-    // Target the specific hand area inside the player's row
     const playerArea = document.querySelector("#player-area .hand-area");
     const previewEl = document.getElementById("card-preview");
 
-    playerArea.innerHTML = "";
+    if (!playerArea) playerArea.innerHTML = "";
+    this.#previewCache.clear();
+
     const count = cardsData.length;
-
-    const totalFanAngle = (cardsData.length + 1) * 10;
-
-    // Math for fan distribution
+    const totalFanAngle = (count + 1) * 10;
     const startAngle = count > 1 ? -(totalFanAngle / 2) : 0;
     const step = count > 1 ? totalFanAngle / (count - 1) : 0;
 
     cardsData.forEach((data, index) => {
       const rotation = startAngle + step * index;
 
-      // Create the small fan card
+      // Create small hand card
       const cardDiv = document.createElement("div");
-      // NOTE: Using 'hand-card' is fine, but you might want a player-specific class
       cardDiv.className = "card game-card friendly-card";
       cardDiv.style.setProperty("--rot", `${rotation}deg`);
       cardDiv.style.zIndex = index;
 
       cardDiv.innerHTML = `
-        ${
-          data.img
-            ? `<img src="${data.img}" class="friendly-card-img-top card-img-top">`
-            : ""
-        }
+        ${data.img ? `<img src="${data.img}" class="friendly-card-img-top card-img-top" loading="lazy">` : ""}
         <div class="card-body py-0">
-          <h3 class="card-title fs-6 h-100 d-flex justify-content-center align-items-center text-center">${
-            data.name
-          }</h3>
+          <h3 class="card-title fs-6 h-100 d-flex justify-content-center align-items-center text-center">
+            ${data.name}
+          </h3>
         </div>
-        
-    `;
+      `;
 
-      // --- INTERACTION LOGIC ---
-      cardDiv.addEventListener("mouseenter", () => {
-        const description = this.#replaceCardTextSpecialCharacters(
-          data.description
-        );
+      // ────── PRE-BUILD PREVIEW HTML ONCE ──────
+      const description = this.#replaceCardTextSpecialCharacters(data.description || "");
 
-        // Build the Large Card HTML
-        previewEl.innerHTML = `
-        ${
-          data.img
-            ? `<img src="${data.img}" class="preview-card-img-top card-img-top pt-3">`
-            : ""
-        }
+      const previewHTML = `
+        ${data.img ? `<img src="${data.img}" class="preview-card-img-top card-img-top pt-3" loading="lazy">` : ""}
         <div class="card-body">
           <h3 class="card-title">${data.name}</h3>
           <p class="card-text">${description || "No description available."}</p>
         </div>
       `;
+
+      this.#previewCache.set(index, previewHTML);
+
+      // ────── HOVER LOGIC (now super cheap) ──────
+      cardDiv.addEventListener("mouseenter", () => {
+        previewEl.innerHTML = this.#previewCache.get(index); // cached string → no new img requests
         previewEl.classList.add("show");
       });
 
@@ -65,61 +66,46 @@ class CardGenerator {
         previewEl.classList.remove("show");
       });
 
-      playerArea.appendChild(cardDiv);
+      playerArea?.appendChild(cardDiv);
     });
   }
 
   /**
-   * Generates hidden enemy cards in an inverted fan shape.
-   * @param {Number} count - The number of cards to display.
+   * Generates hidden enemy cards (card backs) in an inverted fan.
+   * @param {number} count
    */
   generateEnemyHandCards(count) {
-    // Target the specific hand area inside the enemy's row
     const enemyArea = document.querySelector("#enemy-area .hand-area");
-
-    // Create a placeholder array for iteration
-    const cardsData = Array(count).fill({});
-
-    const totalFanAngle = (count + 1) * 10;
+    if (!enemyArea) return;
 
     enemyArea.innerHTML = "";
-
-    // Math for fan distribution
+    const totalFanAngle = (count + 1) * 10;
     const startAngle = count > 1 ? -(totalFanAngle / 2) : 0;
     const step = count > 1 ? totalFanAngle / (count - 1) : 0;
 
-    cardsData.forEach((_, index) => {
-      const rotation = startAngle + step * index;
-
-      // Create the hidden card element
+    for (let i = 0; i < count; i++) {
+      const rotation = startAngle + step * i;
       const cardDiv = document.createElement("div");
-      // NOTE: Using 'enemy-card' is fine, but you might want a specific class
       cardDiv.className = "game-card enemy-card";
       cardDiv.style.setProperty("--rot", `${rotation}deg`);
-      cardDiv.style.zIndex = index;
-
-      // No content needed, as they are hidden card backs
-
+      cardDiv.style.zIndex = i;
       enemyArea.appendChild(cardDiv);
-    });
+    }
   }
 
   /**
-   * Replace special characters in text into respective formats
-   * @param {Number} text - The text to be modified.
+   * Replaces special tokens in card description.
+   * @private
+   * @param {string} text
+   * @returns {string}
    */
   #replaceCardTextSpecialCharacters(text) {
-    // Replace [LINEBREAK] into <br>
-    var linebreak_replaced_text = _.replace(text, "[LINEBREAK]", "<br>");
-
-    // Replace *Word* into <strong>Word</strong>
-    function boldAsterisks(text) {
-      return text.replace(/\*(.+?)\*/g, '<strong>$1</strong>');
-    }
-    var strong_font_replaced_text = boldAsterisks(linebreak_replaced_text);
-
-    return strong_font_replaced_text;
+    if (!text) return "";
+    let result = text.replace(/\[LINEBREAK\]/g, "<br>");
+    result = result.replace(/\*(.+?)\*/g, '<strong>$1</strong>');
+    return result;
   }
 }
 
+// Global singleton
 var CardGenerationHelper = new CardGenerator();

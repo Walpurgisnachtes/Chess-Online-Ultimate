@@ -17,18 +17,8 @@ Features:
 from __future__ import annotations
 
 from typing import List, Optional
-from pathlib import Path
-import sys
 
-# --------------------------------------------------------------------------- #
-# Package setup for development (allows running file directly)
-# --------------------------------------------------------------------------- #
-if __name__ == "__main__" and (__package__ is None or __package__ == ""):
-    parent_dir = str(Path(__file__).resolve().parents[1])
-    sys.path.append(parent_dir)
-    __package__ = "backend.chess_related"
-
-from status_effect import StatusEffect
+from chess_related.status_effect import StatusEffect
 from misc.enums import PieceName, StatusCountdownMethod
 
 

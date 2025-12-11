@@ -9,6 +9,10 @@ Chess Online Ultimate - Chess Page
     rel="stylesheet"
     href="{{ url_for('static', filename='css/fan-shape-cards.css') }}"
 />
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/chess-board.css') }}"
+/>
 {% endblock %}
 
 {% block content %}
@@ -26,8 +30,17 @@ Chess Online Ultimate - Chess Page
 
   </div>
 
-  <div id="game-board">
+  <div id="game-board" class="d-flex justify-content-center align-items-center my-4">
+    <div class="chessboard-wrapper position-relative">
+      
+      <div class="chessboard">
+      </div>
 
+      <!-- Optional: Turn indicator or game status -->
+      <div class="game-status text-center mt-3">
+        <h5 class="mb-0">White to move</h5>
+      </div>
+    </div>
   </div>
 
   <div id="player-area" class="hand-area-wrapper row">
@@ -55,5 +68,6 @@ Chess Online Ultimate - Chess Page
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/chess/card-generator.js') }}"></script>
+<script src="{{ url_for('static', filename='js/chess/board-generator.js') }}"></script>
 <script src="{{ url_for('static', filename='js/chess/main.js') }}"></script>
 {% endblock %}

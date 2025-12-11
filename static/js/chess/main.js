@@ -58,6 +58,8 @@ $(document).ready(async function () {
 
       const enemyCardCount = 5;
       CardGenerationHelper.generateEnemyHandCards(enemyCardCount);
+
+      BoardGenerationHelper.generateChessBoard();
     } catch (error) {
       console.error("Error fetching skills:", error);
       throw error;

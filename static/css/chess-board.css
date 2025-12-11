@@ -1,0 +1,87 @@
+/* Chessboard Styling – Clean, Modern, Dark/Light Mode Ready */
+.chessboard-wrapper {
+  font-family: "Inter", sans-serif;
+  user-select: none;
+}
+
+.chessboard {
+  display: grid;
+  grid-template-columns: repeat(8, 70px);
+  grid-template-rows: repeat(8, 70px);
+  width: fit-content;
+  border: 4px solid #4a5568;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  background-color: #2d3748;
+}
+
+/* Alternating square colors */
+.chessboard .square {
+  width: 70px;
+  height: 70px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 42px;
+  font-weight: bold;
+  position: relative;
+  transition: background-color 0.2s;
+}
+
+.chessboard .square.light {
+  background-color: #ebecd0;
+}
+.chessboard .square.dark {
+  background-color: #779556;
+}
+
+/* Highlight selected piece */
+.chessboard .square.selected {
+  box-shadow: inset 0 0 0 5px #48bb78 !important;
+}
+
+/* Possible moves */
+.chessboard .square.highlight {
+  background-color: rgba(72, 187, 120, 0.5) !important;
+}
+
+/* Last move highlight */
+.chessboard .square.last-move {
+  background-color: rgba(246, 199, 94, 0.6) !important;
+}
+
+/* Labels (a-h and 1-8) */
+.board-labels {
+  position: absolute;
+  color: var(--bs-body-color);
+  font-weight: 600;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.files {
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 70px;
+}
+.ranks {
+  right: -40px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 70px;
+}
+
+/* Dark mode support */
+html[data-bs-theme="dark"] .chessboard .square.light {
+  background-color: #a0a0a0;
+}
+html[data-bs-theme="dark"] .chessboard .square.dark {
+  background-color: #5e7c47;
+}
+html[data-bs-theme="dark"] .chessboard {
+  border-color: #e2e8f0;
+}

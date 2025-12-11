@@ -1,15 +1,8 @@
 from typing import List, Optional
 import re
 
-from pathlib import Path
-import sys
-if __name__ == "__main__" and (__package__ is None or __package__ == ""):
-    parent_dir = str(Path(__file__).resolve().parents[1])
-    sys.path.append(parent_dir)
-    __package__ = "backend.chess_related"
-    
-from piece import BasePiece, KingPiece, QueenPiece, BishopPiece, KnightPiece, RookPiece, PawnPiece, NonePiece
-from chess_utils import *
+from chess_related.piece import BasePiece, KingPiece, QueenPiece, BishopPiece, KnightPiece, RookPiece, PawnPiece, NonePiece
+from chess_related.chess_utils import *
 
 class Board:
     """
