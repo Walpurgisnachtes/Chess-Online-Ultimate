@@ -27,6 +27,10 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/non-scrollable.css') }}"
     />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/error-toast.css') }}"
+    />
     {% block css %} {% endblock %}
   </head>
   <body>
@@ -47,30 +51,17 @@
         <div class="collapse navbar-collapse" id="navbarSupportedContent">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
             <li class="nav-item">
-              <a class="nav-link" href="home">Home</a>
+              <a class="nav-link" href="/home">Home</a>
             </li>
             <li class="nav-item">
-              <a class="nav-link" href="chess">Chess</a>
+              <a class="nav-link" href="/deckbuilder">Deck Builder</a>
             </li>
-            <li class="nav-item dropdown">
-              <a
-                class="nav-link dropdown-toggle"
-                href="#"
-                id="navbarDropdown"
-                role="button"
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-              >
-                Dropdown
-              </a>
-              <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
-                <li><a class="dropdown-item" href="#">Action</a></li>
-                <li><a class="dropdown-item" href="#">Another action</a></li>
-                <li><hr class="dropdown-divider" /></li>
-                <li>
-                  <a class="dropdown-item" href="#">Something else here</a>
-                </li>
-              </ul>
+            <li class="nav-item">
+              <a class="nav-link" href="/leaderboard">Leaderboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/rule">Rules</a>
+            </li>
             </li>
             <li class="nav-item">
               <button
@@ -83,9 +74,35 @@
               </button>
             </li>
           </ul>
+          <ul class="navbar-nav align-items-center">
+            {% if session.username %}
+              <li class="nav-item me-3">
+                <span class="navbar-text fw-medium">
+                  Welcome, <strong>{{ session.username }}</strong>
+                </span>
+              </li>
+              <li class="nav-item">
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm">Logout</a>
+              </li>
+            {% else %}
+              <li class="nav-item">
+                <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-sm">Login</a>
+              </li>
+            {% endif %}
+          </ul>
         </div>
       </div>
     </nav>
+
+    <!-- Centered Error Popup -->
+    <div id="errorOverlay" class="error-overlay">
+      <div class="error-popup">
+        <div class="error-content">
+          <i class="fas fa-exclamation-circle fa-2x mb-3 text-danger"></i>
+          <p id="errorText" class="mb-0 fw-medium">Error message</p>
+        </div>
+      </div>
+    </div>
 
     <div class="container mt-5">
       {% block content %} {% endblock %}
@@ -98,6 +115,7 @@
     <!-- Custom Scripts -->
     <script src="{{ url_for('static', filename='js/base-color-mode-toggler.js') }}"></script>
     <script src="{{ url_for('static', filename='js/color-mode-toggler.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/error-toast.js') }}"></script>
 
     {% block scripts %} {% endblock %}
   </body>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from flask_socketio import SocketIO, join_room, emit
 import os
 import json
@@ -22,7 +22,7 @@ CSS_DIR = os.path.join("static", "css")
 IMG_DIR = os.path.join("static", "img")
 JS_DIR = os.path.join("static", "js")
 TEMP_DIR = "templates"
-DATABASE_DIR = "database"
+DATABASE_DIR = os.path.join("database", "website")
 
 
 app = Flask(
@@ -38,6 +38,7 @@ socketio = SocketIO(app)
 # Simulated database
 USERS_FILE = 'users.txt'
 LEADERBOARD_FILE = 'leaderboard.txt'
+PLAYER_DECK_FILE = 'player_decks.txt'
 
 games: Dict[str, Dict[str, Union[str, Board, Player]]] = {}
 
@@ -134,8 +135,16 @@ def no_path():
 
 @app.route('/home')
 def home():
-    return render_template("chess.html")
-    # return redirect(url_for('login'))
+    if 'username' in session:
+        return redirect(url_for('lobby'))
+    return redirect(url_for('login'))
+    
+@app.route('/lobby')
+def lobby():
+    if 'username' not in session:
+        flash("Please log in first")
+        return redirect(url_for('login'))
+    return render_template('lobby.html', username=session['username'])
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -161,7 +170,11 @@ def get_session():
         "logged_in": "username" in session,
         "username": session.get("username")
     })
-    
+
+@app.route('/api/request_rooms')
+def get_rooms():
+    pass
+
 @app.route('/api/localization/<language>/skills', methods=['GET'])
 def get_skills(language: str):    
     username = session.get("username", "Player")
@@ -170,15 +183,44 @@ def get_skills(language: str):
 
 @app.route('/api/localization/<language>/cards', methods=['GET'])
 def get_cards(language: str):
+    """Get player current hand cards"""
     username = session.get("username", "Player")
     cards = get_data_with_localization(language, localized_text.get_cards, username=username)
     return jsonify(cards)
+
+@app.route('/api/get_deck')
+def get_deck():
+    try:
+        with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'r') as f:
+            decks = json.load(f)
+        return jsonify(decks)
+    except:
+        return jsonify({})
+
+@app.route('/api/save_deck', methods=['POST'])
+def save_deck():
+    data = request.get_json()
+    decks = session.get('user_decks', [])
+    
+    if data.get('id') is not None and data['id'] < len(decks):
+        decks[data['id']] = data
+    else:
+        decks.append(data)
+    
+    session['user_decks'] = decks
+    return jsonify({"success": True, "decks": decks})
 
 @app.route('/chess/<room>')
 def chess_room(room):
     if 'username' not in session:
         return redirect(url_for('login'))
     return render_template('chess.html', room=room, username=session['username'])
+
+@app.route('/deckbuilder')
+def deckbuilder():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return render_template('deck_builder.html')
 
 @app.route('/leaderboard')
 def leaderboard():

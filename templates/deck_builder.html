@@ -1,0 +1,72 @@
+<!-- templates/deckbuilder.html -->
+{% extends "base.html" %}
+{% block title %}Deck Builder — Chess Online Ultimate{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/deckbuilder.css') }}"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fan-shape-cards.css') }}"/>
+{% endblock %}
+
+{% block content %}
+<div class="deckbuilder-container">
+
+  <!-- LAYER 1: Deck Navigation -->
+  <div id="layer-decknav" class="layer active">
+    <h1 class="h2 fw-bold text-center mb-5">My Decks</h1>
+    <div class="row g-4" id="deckList">
+      <div class="col-md-6 col-lg-4">
+        <div class="card deck-nav-card new-deck-btn h-100 text-center p-5" data-action="new">
+          <i class="fas fa-plus fa-4x text-muted mb-3"></i>
+          <h5>New Deck</h5>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAYER 2: Deck Builder -->
+  <div id="layer-builder" class="layer">
+    <div class="header-bar mb-4">
+      <button class="btn btn-outline-secondary me-3" id="backBtn">Back to Decks</button>
+      <span class="h4 mb-0" id="deckNameDisplay">New Deck</span>
+      <div class="d-flex align-items-center float-end">
+        <span id="deckCount" class="badge bg-primary fs-5 px-px-3">0 / 30</span>
+        <button id="saveDeckBtn" class="btn btn-success ms-3 px-4" disabled>Save Deck</button>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Card Collection -->
+      <div class="col-lg-8">
+        <input type="text" id="searchInput" class="form-control mb-3" placeholder="Search cards by name, type, text...">
+        <div class="collection-area">
+          <div id="cardCollection" class="card-grid">
+            <div class="text-center py-5 text-muted">Loading cards...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Current Deck + Preview -->
+      <div class="col-lg-4">
+        <div class="deck-area mb-4">
+          <h5 class="mb-3">Your Deck</h5>
+          <div id="currentDeck" class="col"></div>
+        </div>
+
+        <div id="largePreview" class="text-center" style="display:none;">
+          <div class="preview-card show d-inline-block">
+            <img id="previewImg" src="" class="card-img-top">
+            <div class="card-body">
+              <h3 id="previewName" class="card-title mb-2"></h3>
+              <p id="previewDesc" class="card-text"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/deckbuilder.js') }}"></script>
+{% endblock %}
