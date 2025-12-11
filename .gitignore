@@ -1,6 +1,9 @@
 # virtual environment
 venv/*
 
+# Database stuff
+*.txt
+
 # old versions
 */**/__pycache__/*
 */**/venv/*
