@@ -65,7 +65,7 @@
   "agincourt": {
     "name": "<LOC_CARD_AGINCOURT_NAME>",
     "description": "<LOC_CARD_AGINCOURT_DESC>",
-    "img": "/static/img/cards/agincourt.png",
+    "img": "/static/img/cards/agincourt_card.png",
     "cost": "6",
     "id": "40001"
   },
