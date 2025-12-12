@@ -55,8 +55,8 @@ class LobbyDeckSelector {
       const div = document.createElement("div");
       div.className = `card game-card ${
         cardCount == 20 ? "deck-select-card" : ""
-      } deck-nav-card text-center py-5 mx-5 position-relative border ${
-        isActive ? "border-primary shadow" : "border-light"
+      } deck-nav-card text-center py-5 mx-5 position-relative border border-2 ${
+        isActive ? "border-primary shadow" : ""
       }`;
       div.dataset.deckIndex = index;
       div.innerHTML = `

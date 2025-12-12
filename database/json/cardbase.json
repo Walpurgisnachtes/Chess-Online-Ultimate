@@ -63,6 +63,14 @@
     "type": "special",
     "id": "20002"
   },
+  "cdo": {
+    "name": "<LOC_CARD_CDO_NAME>",
+    "description": "<LOC_CARD_CDO_DESC>",
+    "img": "/static/img/cards/cdo_card.png",
+    "cost": "1",
+    "type": "special",
+    "id": "20003"
+  },
   "counterstrike": {
     "name": "<LOC_CARD_COUNTERSTRIKE_NAME>",
     "description": "<LOC_CARD_COUNTERSTRIKE_DESC>",

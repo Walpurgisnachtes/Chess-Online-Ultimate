@@ -35,7 +35,7 @@
 .deck-nav-card {
   transition: all 0.25s ease;
   cursor: pointer;
-  border: 2px solid var(--bs-card-border-color);
+  border-color: var(--bs-card-border-color);
   background: var(--bs-light);
 }
 .deck-nav-card:hover {

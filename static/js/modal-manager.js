@@ -18,7 +18,7 @@ class ModalManager {
   }
 
   hide() {
-    removeFocus();
+    this.removeFocus();
     this.modal.hide();
   }
 

@@ -86,7 +86,7 @@
             <Text>Counter Strike</Text>
         </Replace>
         <Replace Tag="LOC_CARD_COUNTERSTRIKE_DESC" Language="en">
-            <Text>When the enemy plays an *Attack*, *Special*, or *Trap* card:[LINEBREAK]Negate the card, the enemy recycles it.</Text>
+            <Text>When the enemy plays an *Attack*, *Special*, or *Trap* card:[LINEBREAK]Negate and *recycle* the card.</Text>
         </Replace>
         <Replace Tag="LOC_CARD_LONGBOWMAN_NAME" Language="en">
             <Text>Longbowmen</Text>
@@ -116,7 +116,7 @@
             <Text>Crossbowmen</Text>
         </Replace>
         <Replace Tag="LOC_CARD_CROSSBOWMEN_DESC" Language="en">
-            <Text>Target 1 enemy piece.[LINEBREAK]It is removed after be targeted by "Crossbowmen" again.</Text>
+            <Text>Target 1 enemy piece.[LINEBREAK]*Remove* it if it is targeted by "Crossbowmen" again.</Text>
         </Replace>
         <Replace Tag="LOC_CARD_WINDSOR_CASTLE_NAME" Language="en">
             <Text>Windsor Castle</Text>
@@ -147,6 +147,12 @@
         </Replace>
         <Replace Tag="LOC_CARD_CONSTANTINOPLE_DESC" Language="en">
             <Text>*Removes* and *revives* all enemy pawns, *change* them into rooks.[LINEBREAK]All rooks can only move 1 square each turn.</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_CDO_NAME" Language="en">
+            <Text>Compagnie d'ordonnance</Text>
+        </Replace>
+        <Replace Tag="LOC_CARD_CDO_DESC" Language="en">
+            <Text>You enemy *recycles* a random card.</Text>
         </Replace>
 
         <!-- Keywords -->

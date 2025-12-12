@@ -7,6 +7,7 @@ class DeckBuilder {
     this.currentDeckName = null;
     this.currentDeckCardIDs = [];
     this.currentDeckCards = [];
+    this.currentDeckActive = false;
 
     this.isPreviewOpen = false; // Track preview state
   }
@@ -40,14 +41,14 @@ class DeckBuilder {
 
     _.forEach(this.myDecks, (deck, idx) => {
       const el = document.createElement("div");
-      el.className =
-        "col-md-6 col-lg-4 card game-card deck-nav-card text-center py-5 mx-5 position-relative";
+      el.className = `col-md-6 col-lg-4 card game-card deck-nav-card text-center py-5 mx-5 border border-2 ${
+        deck.active === "true" ? "border-primary shadow" : ""
+      } position-relative`;
       el.dataset.deckIndex = idx;
       el.innerHTML = `
         <div class="text-center">
           <i class="fas fa-scroll fa-4x text-primary mb-3"></i>
           <h6>${deck.name || "Untitled Deck"}</h6>
-          <small class="text-muted">${deck.deck?.length || 0} cards</small>
         </div>
       `;
       container.appendChild(el);
@@ -101,6 +102,7 @@ class DeckBuilder {
     this.currentDeckId = null;
     this.currentDeckCards = [];
     this.currentDeckCardIDs = [];
+    this.currentDeckActive = false;
     document.getElementById("deckNameDisplay").textContent = "New Deck";
     document.getElementById("deleteDeckBtn").classList.add("visually-hidden");
     this.loadCardCollection();
@@ -112,6 +114,7 @@ class DeckBuilder {
     this.currentDeckId = index;
     this.currentDeckName = deck.name;
     this.currentDeckCardIDs = deck.deck ? [...deck.deck] : [];
+    this.currentDeckActive = deck.active === "true";
     document.getElementById("deckNameDisplay").textContent =
       deck.name || "Untitled Deck";
     document
@@ -314,16 +317,23 @@ class DeckBuilder {
 
   async saveDeck() {
     var deckName = "";
-    if (this.currentDeckId) {
+    if (_.isNumber(this.currentDeckId)) {
       deckName = this.currentDeckName;
     } else {
       deckName = await modal.enterData("Enter deck name:", "Enter Deck Name");
+    }
+    modal.hide();
+
+    if (!deckName) {
+      setTimeout(async () => await modal.error("Save Cancelled!"), 500);
+      return;
     }
 
     const deckData = {
       id: this.currentDeckId ?? this.myDecks.length,
       name: deckName,
       cards: this.currentDeckCards,
+      active: _.toString(this.currentDeckActive),
     };
 
     try {
@@ -334,12 +344,13 @@ class DeckBuilder {
       });
       const result = await res.json();
       if (result.success) {
+        setTimeout(async () => await modal.messageOnly("Save Success!"), 500);
         this.myDecks = result.decks;
         this.switchLayer("layer-decknav");
         this.renderDeckList();
       }
     } catch (err) {
-      await modal.error("Save failed");
+      setTimeout(async () => await modal.error("Save failed"), 500);
       console.error(err);
     }
   }
