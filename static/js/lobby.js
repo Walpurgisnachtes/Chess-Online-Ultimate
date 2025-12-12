@@ -46,7 +46,7 @@ class LobbyDeckSelector {
     container.innerHTML = "";
     this.myDecks.forEach((deck, index) => {
       const cardCount = deck.deck?.length || 0;
-      const isActive = deck.active === "true" || false;
+      const isActive = deck.active === "true";
       if (isActive) {
         this.isAnyDeckActive = true;
         this.selectedDeckName = deck.name;
