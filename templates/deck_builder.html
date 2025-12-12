@@ -71,5 +71,12 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/chess/card-generator.js') }}"></script>
-<script src="{{ url_for('static', filename='js/deckbuilder.js') }}"></script>
+<script src="{{ url_for('static', filename='js/deck-loader.js') }}"></script>
+<script src="{{ url_for('static', filename='js/deck-builder.js') }}"></script>
+<script>
+  // Start when DOM is ready
+  document.addEventListener("DOMContentLoaded", () => {
+    deckBuilder.init();
+  });
+</script>
 {% endblock %}

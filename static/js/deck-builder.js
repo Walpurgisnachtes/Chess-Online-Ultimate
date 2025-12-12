@@ -9,8 +9,6 @@ class DeckBuilder {
     this.currentDeckCards = [];
 
     this.isPreviewOpen = false; // Track preview state
-
-    this.init();
   }
 
   async init() {
@@ -21,8 +19,9 @@ class DeckBuilder {
 
   async loadDecks() {
     try {
-      const res = await fetch("/api/get_deck");
-      this.myDecks = await res.json();
+      const deckLoader = new DeckLoader();
+      await deckLoader.loadDecks();
+      this.myDecks = deckLoader.decks;
       this.renderDeckList();
     } catch (err) {
       alert("Failed to load decks");
@@ -47,7 +46,7 @@ class DeckBuilder {
       el.innerHTML = `
         <div class="text-center">
           <i class="fas fa-scroll fa-4x text-primary mb-3"></i>
-          <h5>${deck.name || "Untitled Deck"}</h5>
+          <h6>${deck.name || "Untitled Deck"}</h6>
           <small class="text-muted">${deck.deck?.length || 0} cards</small>
         </div>
       `;

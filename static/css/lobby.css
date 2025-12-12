@@ -9,3 +9,7 @@
   font-size: 0.9rem;
   opacity: 0.8;
 }
+
+#selectDeckModal .modal-content {
+  height: 90vh;
+}

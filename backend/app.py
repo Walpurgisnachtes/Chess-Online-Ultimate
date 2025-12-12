@@ -37,9 +37,9 @@ socketio = SocketIO(app)
 
 
 # Simulated database
-USERS_FILE = 'users.txt'
-LEADERBOARD_FILE = 'leaderboard.txt'
-PLAYER_DECK_FILE = 'player_decks.txt'
+USERS_FILE = 'users.json'
+LEADERBOARD_FILE = 'leaderboard.json'
+PLAYER_DECK_FILE = 'player_decks.json'
 
 games: Dict[str, Dict[str, Union[str, Board, Player]]] = {}
 
@@ -209,6 +209,7 @@ def save_deck():
     deck_id = data["id"]
     deck_name = data["name"]
     deck_cards = change_json_card_object_into_card_id_list(data["cards"])
+    deck_active = data["active"]
     
     with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'r') as f:
         try:
@@ -221,17 +222,20 @@ def save_deck():
             if deck_id < player_original_decks.__len__():
                 player_original_decks[deck_id] = {
                     "name": deck_name,
-                    "deck": deck_cards
+                    "deck": deck_cards,
+                    "active": deck_active
                 }
             else:
                 player_original_decks.append({
                     "name": deck_name,
-                    "deck": deck_cards
+                    "deck": deck_cards,
+                    "active": deck_active
                 })
         else:
             decks[username] = [{
                 "name": deck_name,
-                "deck": deck_cards
+                "deck": deck_cards,
+                "active": deck_active
             }]
         
     with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'w') as f:
@@ -261,6 +265,42 @@ def delete_deck():
                     return jsonify({"success": False, "error": "Invalid deck ID"})
                 
                 del player_original_decks[deck_id]
+        
+        with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'w') as f:
+            json.dump(decks, f)
+    
+        return jsonify({"success": True, "decks": decks[username]})
+    except:
+        return jsonify({"success": False, "error": "Invalid deck ID"})
+
+@app.route('/api/set_active_deck', methods=['POST'])
+def set_active_deck():
+    data = request.get_json()
+    username = session.get("username", "Player")
+    
+    try:
+        with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'r') as f:
+            try:
+                decks = json.load(f)
+            except:
+                decks = {}
+                
+            deck_id = int(data["id"])
+                
+        
+            if username in decks:
+                player_original_decks = decks[username]
+                
+                if deck_id < 0 or deck_id >= len(player_original_decks):
+                    return jsonify({"success": False, "error": "Invalid deck ID"})
+                
+                i = 0
+                for deck in player_original_decks:
+                    if i == deck_id:
+                        deck["active"] = "true"
+                    else:
+                        deck["active"] = "false"
+                    i += 1
         
         with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'w') as f:
             json.dump(decks, f)

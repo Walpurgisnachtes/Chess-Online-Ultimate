@@ -2,6 +2,8 @@
 {% block title %}Lobby — Chess Online Ultimate{% endblock %}
 
 {% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/fan-shape-cards.css') }}"/>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/deckbuilder.css') }}"/>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/lobby.css') }}"/>
 {% endblock %}
 
@@ -14,7 +16,7 @@
         <h1 class="h2 fw-bold">Game Lobby</h1>
       </div>
 
-      <div class="row g-4">
+      <div class="row g-4 justify-content-between">
         <!-- Create New Room -->
         <div class="col-md-6 col-lg-4">
           <div class="card h-100 text-center room-card border-primary">
@@ -23,6 +25,20 @@
               <h5 class="card-title">Create New Game</h5>
               <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#createRoomModal">
                 Create Room
+              </button>
+            </div>
+          </div>
+        </div>
+
+        
+        <!-- Select Play Deck -->
+        <div id="select-active-deck-btn" class="col-md-6 col-lg-4">
+          <div class="card h-100 text-center room-card border-primary">
+            <div class="card-body d-flex flex-column justify-content-center py-5">
+              <i class="fas fa-scroll fa-4x text-primary mb-3"></i>
+              <h5 class="card-title">Select Active Deck</h5>
+              <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#selectDeckModal">
+                Select Deck
               </button>
             </div>
           </div>
@@ -67,30 +83,30 @@
     </div>
   </div>
 </div>
+<!-- Select Active Deck Modal -->
+<div class="modal fade" id="selectDeckModal" tabindex="-1" aria-labelledby="selectDeckModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h5 class="modal-title" id="selectDeckModalLabel">
+        <i class="fas fa-scroll me-2"></i>Select Active Deck
+      </h5>
+      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+    </div>
+    <div class="modal-body pt-5">
+      <div id="deckSelectionList" class="row g-3">
+        <div class="text-center py-5 text-muted">
+          <i class="fas fa-spinner fa-spin fa-2x"></i>
+          <p class="mt-3">Loading your decks...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-<script>
-  const socket = io();
-
-  document.getElementById('confirmCreateRoom').addEventListener('click', () => {
-    const roomName = document.getElementById('roomNameInput').value.trim();
-    const skill = document.getElementById('skillInput').value;
-
-    if (!roomName) {
-      alert("Please enter a room name!");
-      return;
-    }
-
-    // Redirect to chess room
-    window.location.href = `/chess/${encodeURIComponent(roomName)}?skill=${skill}`;
-  });
-
-  // Optional: Auto-join via Socket.IO if you want live room list
-  socket.on('connect', () => {
-    console.log("Connected to server");
-    // You can emit 'request_rooms' here if you implement live lobby
-  });
-</script>
+<script src="{{ url_for('static', filename='js/deck-loader.js') }}"></script>
+<script src="{{ url_for('static', filename='js/lobby.js') }}"></script>
 {% endblock %}
