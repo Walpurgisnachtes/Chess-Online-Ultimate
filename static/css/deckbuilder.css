@@ -63,6 +63,10 @@
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+.deck-area {
+  height: 100%;
+}
+
 /* Card Grid */
 .card-grid {
   display: grid;
