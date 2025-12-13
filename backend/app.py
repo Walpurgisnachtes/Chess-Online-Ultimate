@@ -4,7 +4,7 @@ from copy import deepcopy
 import os
 import json
 import secrets
-from typing import List, Dict, Union, Callable, Optional 
+from typing import List, Dict, Union, Callable, Any, Optional
 
 import read_localized_text as localized_text
 
@@ -95,6 +95,9 @@ def get_data_with_localization(language: str, get_method: Callable[..., Dict[str
 def change_json_card_object_into_card_id_list(cards: List) -> List[str]:
     return [card["id"] for card in cards]
 
+def change_json_system_object_into_system_id(system: Any) -> str:
+    return system["id"]
+
 
 def server_start():
     """
@@ -103,10 +106,15 @@ def server_start():
     Prints all loaded cards for verification.
     """
     # 1. Load raw data
-    data = get_data_with_localization("en", localized_text.get_cards)
-    cards_data = list(data.values())
+    raw_cards_data = get_data_with_localization("en", localized_text.get_cards)
+    cards_data = list(raw_cards_data.values())
 
     print(f"Found {len(cards_data)} card definitions in localization file.\n")
+    
+    raw_systems_data = get_data_with_localization("en", localized_text.get_systems)
+    systems_data = list(raw_systems_data.values())
+
+    print(f"Found {len(systems_data)} system definitions in localization file.\n")
 
     # 2. Convert to Card objects safely
     card_objects = []
@@ -118,20 +126,20 @@ def server_start():
             cost=int(card.get('cost') or 0)  # safe int conversion
         )
         card_objects.append(card_obj)
+        
+    system_objects = []
+    for system in systems_data:
+        system_obj = Card(
+            name=system['name'],
+            id=int(system['id']),
+            desc=system.get('description', 'No description'),
+            cost=int(system.get('cost') or 0)  # safe int conversion
+        )
+        system_objects.append(system_obj)
 
     # 3. Register all cards
     card_base = StaticCardBase.instance()
     card_base.register_many(card_objects)
-
-    # 4. FINAL DEBUG: Print every card using its __str__
-    print("=" * 60)
-    print("ALL CARDS LOADED AND REGISTERED")
-    print("=" * 60)
-    for card in card_objects:
-        print(card)  # This calls card.__str__() automatically
-    print("=" * 60)
-    print(f"Total cards registered: {len(card_base)}")
-    print("Server startup complete!\n")
 
 @app.route('/')
 def no_path():
@@ -186,10 +194,15 @@ def get_skills(language: str):
 
 @app.route('/api/localization/<language>/cards', methods=['GET'])
 def get_cards(language: str):
-    """Get player current hand cards"""
     username = session.get("username", "Player")
     cards = get_data_with_localization(language, localized_text.get_cards, username=username)
     return jsonify(cards)
+
+@app.route('/api/localization/<language>/systems', methods=['GET'])
+def get_systems(language: str):
+    username = session.get("username", "Player")
+    systems = get_data_with_localization(language, localized_text.get_systems, username=username)
+    return jsonify(systems)
 
 @app.route('/api/get_deck')
 def get_deck():
@@ -209,6 +222,7 @@ def save_deck():
     deck_id = data["id"]
     deck_name = data["name"]
     deck_cards = change_json_card_object_into_card_id_list(data["cards"])
+    deck_system = change_json_system_object_into_system_id(data["system"])
     deck_active = data["active"]
     
     with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'r') as f:
@@ -222,18 +236,21 @@ def save_deck():
             if deck_id < player_original_decks.__len__():
                 player_original_decks[deck_id] = {
                     "name": deck_name,
+                    "system": deck_system,
                     "deck": deck_cards,
                     "active": deck_active
                 }
             else:
                 player_original_decks.append({
                     "name": deck_name,
+                    "system": deck_system,
                     "deck": deck_cards,
                     "active": deck_active
                 })
         else:
             decks[username] = [{
                 "name": deck_name,
+                "system": deck_system,
                 "deck": deck_cards,
                 "active": deck_active
             }]

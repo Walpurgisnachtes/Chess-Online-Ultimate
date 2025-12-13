@@ -3,13 +3,19 @@ class DeckBuilder {
   constructor() {
     this.allCards = [];
     this.myDecks = [];
+
     this.currentDeckId = null;
     this.currentDeckName = null;
+    this.currentDeckSystemID = null;
+    this.currentDeckSystem = null;
     this.currentDeckCardIDs = [];
     this.currentDeckCards = [];
     this.currentDeckActive = false;
 
     this.isPreviewOpen = false; // Track preview state
+
+    this.CARD_COLLECTION = "card";
+    this.SYSTEM_COLLECTION = "system";
   }
 
   async init() {
@@ -76,6 +82,8 @@ class DeckBuilder {
     document
       .getElementById("searchInput")
       .addEventListener("input", () => this.renderCollection());
+    document.getElementById("system-change-btn").onclick = () =>
+      this.switchTab(this.SYSTEM_COLLECTION);
   }
 
   bindGlobalClick() {
@@ -100,19 +108,26 @@ class DeckBuilder {
 
   createNewDeck() {
     this.currentDeckId = null;
+    this.currentDeckName = null;
+    this.currentDeckSystem = null;
+    this.currentDeckSystemID = null;
     this.currentDeckCards = [];
     this.currentDeckCardIDs = [];
     this.currentDeckActive = false;
     document.getElementById("deckNameDisplay").textContent = "New Deck";
     document.getElementById("deleteDeckBtn").classList.add("visually-hidden");
-    this.loadCardCollection();
+    this.loadCollection();
     this.switchLayer("layer-builder");
+    this.switchTab(this.CARD_COLLECTION);
   }
 
   openDeck(index) {
     const deck = this.myDecks[index];
     this.currentDeckId = index;
     this.currentDeckName = deck.name;
+    this.currentDeckSystem = null;
+    this.currentDeckSystemID = deck.system ?? "90001";
+    this.currentDeckCards = [];
     this.currentDeckCardIDs = deck.deck ? [...deck.deck] : [];
     this.currentDeckActive = deck.active === "true";
     document.getElementById("deckNameDisplay").textContent =
@@ -120,18 +135,33 @@ class DeckBuilder {
     document
       .getElementById("deleteDeckBtn")
       .classList.remove("visually-hidden");
-    this.loadCardCollection();
+    this.loadCollection();
     this.switchLayer("layer-builder");
+    this.switchTab(this.CARD_COLLECTION);
   }
 
-  async loadCardCollection() {
+  async loadCollection() {
     try {
-      const res = await fetch("/api/localization/en/cards");
-      const data = await res.json();
-      this.allCards = Object.values(data);
+      await this.loadCardAndSystemCollection();
       this.renderCollection();
       this.formatCurrentDeck();
       this.renderCurrentDeck();
+      this.formatCurrentSystem();
+      this.renderCurrentSystem();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async loadCardAndSystemCollection() {
+    try {
+      const res = await fetch("/api/localization/en/cards");
+      const data = await res.json();
+      this.allCards = _.values(data);
+
+      const res2 = await fetch("/api/localization/en/systems");
+      const data2 = await res2.json();
+      this.allSystems = _.values(data2);
     } catch (err) {
       console.error(err);
     }
@@ -157,10 +187,22 @@ class DeckBuilder {
     });
   }
 
+  formatCurrentSystem() {
+    this.currentDeckSystem = _.find(
+      this.allSystems,
+      (system) => system.id == this.currentDeckSystemID
+    );
+  }
+
   renderCollection() {
-    const container = document.getElementById("cardCollection");
+    this.renderCardCollection();
+    this.renderSystemCollection();
+  }
+
+  renderCardCollection() {
+    const container = document.getElementById("card-collection");
     const query = document.getElementById("searchInput").value.toLowerCase();
-    container.innerHTML = "";
+    container.innerHTML = ``;
 
     this.allCards
       .filter((card) => card.name.toLowerCase().includes(query))
@@ -198,6 +240,56 @@ class DeckBuilder {
       });
   }
 
+  renderSystemCollection() {
+    const container = document.getElementById("system-collection");
+    const query = document.getElementById("searchInput").value.toLowerCase();
+    container.innerHTML = ``;
+
+    this.allSystems
+      .filter((system) => system.name.toLowerCase().includes(query))
+      .forEach((system) => {
+        const div = document.createElement("div");
+        div.className = "card collection-card game-card position-relative";
+        div.dataset.systemId = system.id;
+        div.innerHTML = `
+          ${
+            system.img
+              ? `<img src="${system.img}" class="collection-card-img-top card-img-top" loading="lazy">`
+              : ""
+          }
+          <div class="card-body p-2 d-flex align-items-center justify-content-center text-center">
+            <h6 class="mb-1">${system.name}</h6>
+          </div>
+        `;
+
+        // Left click: add to deck
+        div.onclick = (e) => {
+          e.preventDefault(); // Prevent right-click context menu interference
+          if (this.isPreviewOpen) return;
+          this.setDeckSystem(system);
+        };
+
+        // Right click: show preview
+        div.oncontextmenu = (e) => {
+          e.preventDefault();
+          if (this.isPreviewOpen) return;
+          this.showPreview(system);
+          return false;
+        };
+
+        this.currentDeckSystem ??= system;
+
+        container.appendChild(div);
+      });
+  }
+
+  switchTab(tab) {
+    const navLink = document.querySelector(`#${tab}-collection-nav`);
+    if (navLink) {
+      navLink.click();
+    }
+  }
+
   renderDeckBuilderAlert(message) {
     errorToastManager.showError(message);
   }
@@ -221,6 +313,15 @@ class DeckBuilder {
     }
     this.currentDeckCards.push(card);
     this.renderCurrentDeck();
+  }
+
+  setDeckSystem(system) {
+    // If preview is open → do NOTHING on left click
+    if (this.isPreviewOpen) {
+      return;
+    }
+    this.currentDeckSystem = system;
+    this.renderCurrentSystem();
   }
 
   removeCardFromDeck(index) {
@@ -258,6 +359,7 @@ class DeckBuilder {
 
       div.querySelector(".remove-btn").onclick = (e) => {
         e.stopPropagation();
+        this.switchTab(this.CARD_COLLECTION);
         this.removeCardFromDeck(index);
       };
 
@@ -278,6 +380,22 @@ class DeckBuilder {
       this.currentDeckCards.length === 0;
   }
 
+  renderCurrentSystem() {
+    const systemContainer = document.getElementById("system-collection-area");
+
+    const currentSystemNameElement =
+      systemContainer.querySelector("#system-name");
+    currentSystemNameElement.textContent = this.currentDeckSystem.name;
+
+    systemContainer.querySelector(".deck-card-minimize").oncontextmenu = (
+      e
+    ) => {
+      e.preventDefault();
+      this.showPreview(this.currentDeckSystem);
+      return false;
+    };
+  }
+
   showPreview(card) {
     const previewCard = document.getElementById("largePreview");
     const description = CardGenerationHelper.replaceCardTextSpecialCharacters(
@@ -285,8 +403,10 @@ class DeckBuilder {
     );
 
     previewCard.querySelector("#previewImg").src = card.img || "";
-    previewCard.querySelector("#previewName").textContent = card.name;
-    previewCard.querySelector("#previewCostBadge").textContent = card.cost;
+    previewCard.querySelector("#previewName").textContent =
+      card.name || "Undefined";
+    previewCard.querySelector("#previewCostBadge").textContent =
+      card.cost || "-1";
     previewCard.querySelector("#previewDesc").innerHTML =
       description || "No description.";
 
@@ -294,8 +414,18 @@ class DeckBuilder {
       .querySelector("#deck-builder-preview-card")
       .classList.add("show");
 
+    if (card.cost && _.parseInt(card.cost) !== -1) {
+      previewCard
+        .querySelector("#previewCostBadge")
+        .classList.remove("visually-hidden");
+    } else {
+      previewCard
+        .querySelector("#previewCostBadge")
+        .classList.add("visually-hidden");
+    }
+
     previewCard.querySelector("#deck-builder-preview-card").dataset.cardType =
-      card.type;
+      card.type || "system";
 
     this.isPreviewOpen = true;
   }
@@ -332,6 +462,7 @@ class DeckBuilder {
     const deckData = {
       id: this.currentDeckId ?? this.myDecks.length,
       name: deckName,
+      system: this.currentDeckSystem,
       cards: this.currentDeckCards,
       active: _.toString(this.currentDeckActive),
     };

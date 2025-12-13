@@ -53,18 +53,26 @@
 
 /* Collection & Deck Areas */
 .collection-area,
-.deck-area {
+.deck-area,
+.system-area {
   background: var(--bs-body-bg);
   border-radius: 16px;
   padding: 1.8rem;
-  height: 70vh;
   overflow-y: auto;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
+.collection-area {
+  height: 70vh;
+}
+
 .deck-area {
-  height: 100%;
+  height: 63.5vh;
+}
+
+.system-area {
+  height: 12vh;
 }
 
 /* Card Grid */
@@ -140,7 +148,24 @@
   transition: opacity 0.2s;
   z-index: 10;
 }
-.deck-card:hover .remove-btn {
+.change-btn {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 32px;
+  height: 32px;
+  background: var(--bs-gray-dark);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 18px;
+  font-weight: bold;
+  opacity: 0;
+  transition: opacity 0.2s;
+  z-index: 10;
+}
+.deck-card:hover .remove-btn,
+.deck-card:hover .change-btn {
   opacity: 1;
 }
 
@@ -181,7 +206,8 @@
 
 /* Dark mode support */
 html[data-bs-theme="dark"] .collection-area,
-html[data-bs-theme="dark"] .deck-area {
+html[data-bs-theme="dark"] .deck-area,
+html[data-bs-theme="dark"] .system-area {
   background: #1a1d21;
   border-color: #444;
 }

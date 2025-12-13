@@ -39,15 +39,42 @@
       <!-- Card Collection -->
       <div class="col-lg-8">
         <input type="text" id="searchInput" class="form-control mb-3" placeholder="Search cards by name, type, text...">
-        <div class="collection-area">
-          <div id="cardCollection" class="card-grid">
+        <ul class="nav nav-tabs ms-4 border-bottom-0">
+          <li class="nav-item">
+            <button id="card-collection-nav" class="nav-link collection-nav-link active" data-bs-target="#card-collection" data-bs-toggle="tab" type="button" role="tab" aria-controls="card" aria-selected="true">Cards</button>
+          </li>
+          <li class="nav-item">
+            <button id="system-collection-nav" class="nav-link collection-nav-link" data-bs-target="#system-collection" data-bs-toggle="tab" type="button" role="tab" aria-controls="system" aria-selected="false">Systems</button>
+          </li>
+        </ul>
+        <div class="collection-area tab-content">
+          <div id="card-collection" class="collection-tabs d-grid card-grid fade show active" aria-labelledby="card-tab">
             <div class="text-center py-5 text-muted">Loading cards...</div>
+          </div>
+          <div id="system-collection" class="collection-tabs d-grid card-grid fade visually-hidden" aria-labelledby="system-tab">
+            <div class="text-center py-5 text-muted">Loading systems...</div>
           </div>
         </div>
       </div>
 
       <!-- Current Deck + Preview -->
       <div class="col-lg-4">
+        <div class="system-area mb-4">
+          <h5 class="mb-3">Your System</h5>
+          <div id="system-collection-area" class="col">
+            <div class="deck-card pb-2 row">
+              <div class="card deck-card-minimize bg-light text-dark col">
+                <div class="card-body p-2 text-left">
+                  <h6 id="system-name" class="mb-0">Monarchy</h6>
+                </div>
+                <button id="system-change-btn" class="change-btn col d-flex flex-wrap justify-content-center align-content-center">
+                  <i class="fa-solid fa-arrows-rotate"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div class="deck-area mb-4">
           <h5 class="mb-3">Your Deck</h5>
           <div id="currentDeck" class="col"></div>
@@ -77,6 +104,36 @@
   // Start when DOM is ready
   document.addEventListener("DOMContentLoaded", () => {
     deckBuilder.init();
+
+    function initCollectionTabs(
+      navSelector = '.collection-nav-link',
+      tabSelector = '.collection-tabs',
+      hiddenClass = 'visually-hidden'
+    ) {
+      const navs = Array.from(document.querySelectorAll(navSelector));
+      const tabs = Array.from(document.querySelectorAll(tabSelector));
+
+      if (navs.length !== tabs.length || navs.length === 0) {
+        console.warn('initCollectionTabs: navs and tabs count must match and be greater than zero.');
+        return;
+      }
+
+      // ensure each nav knows its index
+      navs.forEach((nav, index) => {
+        nav.dataset.collectionTabIndex = index;
+        nav.addEventListener('click', () => {
+          tabs.forEach((tab, collectionTabIndex) => {
+            if (collectionTabIndex === index) {
+              tab.classList.remove(hiddenClass);
+            } else {
+              tab.classList.add(hiddenClass);
+            }
+          });
+        });
+      });
+    }
+
+    initCollectionTabs();
   });
 </script>
 {% endblock %}

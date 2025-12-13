@@ -1,0 +1,23 @@
+{
+  "monarchy": {
+    "name": "<LOC_SYSTEM_MONARCHY_NAME>",
+    "description": "<LOC_SYSTEM_MONARCHY_DESC>",
+    "img": "/static/img/systems/monarchy_system.png",
+    "cost": "-1",
+    "id": "90001"
+  },
+  "theocracy": {
+    "name": "<LOC_SYSTEM_THEOCRACY_NAME>",
+    "description": "<LOC_SYSTEM_THEOCRACY_DESC>",
+    "img": "/static/img/systems/theocracy_system.png",
+    "cost": "-1",
+    "id": "90002"
+  },
+  "estates_general": {
+    "name": "<LOC_SYSTEM_ESTATES_GENERAL_NAME>",
+    "description": "<LOC_SYSTEM_ESTATES_GENERAL_DESC>",
+    "img": "/static/img/systems/estates_general_system.png",
+    "cost": "-1",
+    "id": "90003"
+  }
+}

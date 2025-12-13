@@ -51,7 +51,7 @@
     "name": "<LOC_CARD_TAX_NAME>",
     "description": "<LOC_CARD_TAX_DESC>",
     "img": "/static/img/cards/tax_card.png",
-    "cost": "1",
+    "cost": "2",
     "type": "special",
     "id": "20001"
   },
@@ -70,14 +70,6 @@
     "cost": "1",
     "type": "special",
     "id": "20003"
-  },
-  "counterstrike": {
-    "name": "<LOC_CARD_COUNTERSTRIKE_NAME>",
-    "description": "<LOC_CARD_COUNTERSTRIKE_DESC>",
-    "img": "/static/img/cards/counterstrike_card.png",
-    "cost": "3",
-    "type": "trap",
-    "id": "30001"
   },
   "agincourt": {
     "name": "<LOC_CARD_AGINCOURT_NAME>",

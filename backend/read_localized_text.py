@@ -58,9 +58,20 @@ def get_cards() -> Dict[str, Dict[str, str]]:
             data = json.load(f)
             return data
     except FileNotFoundError:
-        print("Error: 'cards.json' not found.")
+        print("Error: 'cardbase.json' not found.")
     except json.JSONDecodeError:
-        print("Error: Invalid JSON format in 'cards.json'.")
+        print("Error: Invalid JSON format in 'cardbase.json'.")
+    return {}
+
+def get_systems() -> Dict[str, Dict[str, str]]:
+    try:
+        with open('database/json/systembase.json') as f:
+            data = json.load(f)
+            return data
+    except FileNotFoundError:
+        print("Error: 'systembase.json' not found.")
+    except json.JSONDecodeError:
+        print("Error: Invalid JSON format in 'systembase.json'.")
     return {}
 
 def replace_tags_with_localized_text(

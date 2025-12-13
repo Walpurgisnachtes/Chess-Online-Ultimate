@@ -70,6 +70,7 @@
         </Replace>
 
         <!-- Cards -->
+        
         <Replace Tag="LOC_CARD_ATTACK_NAME" Language="en">
             <Text>Attack!</Text>
         </Replace>
@@ -107,10 +108,10 @@
             <Text>If a friendly piece is the only one in its column, *change* it into a knight.</Text>
         </Replace>
         <Replace Tag="LOC_CARD_REICHSRITTER_NAME" Language="en">
-            <Text>Reichsritter</Text>
+            <Text>Free Imperial Knights</Text>
         </Replace>
         <Replace Tag="LOC_CARD_REICHSRITTER_DESC" Language="en">
-            <Text>Each of your knights may move once this turn.[LINEBREAK]Whenever one of your knights captures an enemy piece, gain 2 prestige and draw 1 card.</Text>
+            <Text>Each of your knights may move once this turn.[LINEBREAK]Whenever one of your knights captures an enemy piece, gain 1 prestige.</Text>
         </Replace>
         <Replace Tag="LOC_CARD_CROSSBOWMEN_NAME" Language="en">
             <Text>Crossbowmen</Text>
@@ -152,7 +153,27 @@
             <Text>Compagnie d'ordonnance</Text>
         </Replace>
         <Replace Tag="LOC_CARD_CDO_DESC" Language="en">
-            <Text>You enemy *recycles* a random card.</Text>
+            <Text>Your enemy *recycles* a random card.</Text>
+        </Replace>
+
+        <!-- Systems -->
+        <Replace Tag="LOC_SYSTEM_MONARCHY_NAME" Language="en">
+            <Text>Monarchy</Text>
+        </Replace>
+        <Replace Tag="LOC_SYSTEM_MONARCHY_DESC" Language="en">
+            <Text>Each time an enemy piece is captured, you gain 1 prestige.[LINEBREAK]Each time a friendly piece is captured, draw 1 card.</Text>
+        </Replace>
+        <Replace Tag="LOC_SYSTEM_THEOCRACY_NAME" Language="en">
+            <Text>Theocracy</Text>
+        </Replace>
+        <Replace Tag="LOC_SYSTEM_THEOCRACY_DESC" Language="en">
+            <Text>At the end of your turn, if your bishop pins any enemy piece that is shielding the enemy king, you gain 3 prestige.[LINEBREAK]Each time any of your bishops is captured, draw 4 cards.</Text>
+        </Replace>
+        <Replace Tag="LOC_SYSTEM_ESTATES_GENERAL_NAME" Language="en">
+            <Text>Estates General</Text>
+        </Replace>
+        <Replace Tag="LOC_SYSTEM_ESTATES_GENERAL_DESC" Language="en">
+            <Text>Each time your pawns or knights captures an enemy piece, or your enemy *recycles* a card, gain 2 prestige and draw 1 card.[LINEBREAK]Your rooks *change* to knights at the start of the game.</Text>
         </Replace>
 
         <!-- Keywords -->
