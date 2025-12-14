@@ -220,6 +220,10 @@ html[data-bs-theme="dark"] .deck-nav-card {
     height: 20vh;
   }
 
+  .system-area {
+    height: 20vh;
+  }
+
   .deck-preview-card {
     bottom: 5%;
     left: 50%;
@@ -234,5 +238,9 @@ html[data-bs-theme="dark"] .deck-nav-card {
   .deck-preview-card #previewName {
     margin-top: 1rem;
     margin-bottom: 1rem;
+  }
+
+  .deck-preview-card #previewDesc {
+    font-size: 0.9rem;
   }
 }
