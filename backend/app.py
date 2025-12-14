@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
-from flask_socketio import SocketIO, join_room, emit
+from flask_socketio import SocketIO, join_room, emit, disconnect
 from copy import deepcopy
 import os
 import json
@@ -9,7 +9,8 @@ from typing import List, Dict, Union, Callable, Any, Optional
 import read_localized_text as localized_text
 
 from card_related.card_driver import Card, Deck
-from card_related.static_card_base import StaticCardBase
+from card_related.system_driver import System
+from card_related.static_card_base import StaticCardBase, StaticSystemBase
 
 from chess_related.board import Board
 from chess_related.piece import BasePiece, KingPiece, QueenPiece, BishopPiece, KnightPiece, RookPiece, PawnPiece, NonePiece
@@ -95,9 +96,33 @@ def get_data_with_localization(language: str, get_method: Callable[..., Dict[str
 def change_json_card_object_into_card_id_list(cards: List) -> List[str]:
     return [card["id"] for card in cards]
 
+def change_json_card_id_list_into_card_object(card_ids: List[str]) -> List[Card]:
+    card_base = StaticCardBase.instance()
+    card_list: List[Card] = []
+    for card_id in card_ids:
+        card = card_base.get_by_id(card_id)
+        if card:
+            card_list.append(card)
+        else:
+            return []
+    return card_list
+
 def change_json_system_object_into_system_id(system: Any) -> str:
     return system["id"]
 
+def change_json_system_id_into_system_object(system_id: str) -> Optional[System]:
+    system_base = StaticSystemBase.instance()
+    system = system_base.get_by_id(system_id)
+    return system if system else None
+
+def get_active_deck_details(username: str) -> Optional[Dict[str, Union[str, List[str]]]]:
+    try:
+        with open(get_full_file_path(DATABASE_DIR, PLAYER_DECK_FILE), 'r') as f:
+            decks: Dict[str, Dict] = json.load(f)
+        current_player_deck = next((deck for deck in decks[username] if deck.get("active") == "true"), None)
+        return current_player_deck
+    except:
+        return None
 
 def server_start():
     """
@@ -121,7 +146,7 @@ def server_start():
     for card in cards_data:
         card_obj = Card(
             name=card['name'],
-            id=int(card['id']),
+            id=card['id'],
             desc=card.get('description', 'No description'),
             cost=int(card.get('cost') or 0)  # safe int conversion
         )
@@ -129,17 +154,20 @@ def server_start():
         
     system_objects = []
     for system in systems_data:
-        system_obj = Card(
+        system_obj = System(
             name=system['name'],
-            id=int(system['id']),
-            desc=system.get('description', 'No description'),
-            cost=int(system.get('cost') or 0)  # safe int conversion
+            id=system['id'],
+            desc=system.get('description', 'No description')
         )
         system_objects.append(system_obj)
 
     # 3. Register all cards
     card_base = StaticCardBase.instance()
     card_base.register_many(card_objects)
+
+    # 4. Register all systems
+    system_base = StaticSystemBase.instance()
+    system_base.register_many(system_objects)
 
 @app.route('/')
 def no_path():
@@ -212,7 +240,7 @@ def get_deck():
             decks = json.load(f)
         return jsonify(decks[username])
     except:
-        return jsonify({})
+        return jsonify([])
 
 @app.route('/api/save_deck', methods=['POST'])
 def save_deck():
@@ -326,11 +354,11 @@ def set_active_deck():
     except:
         return jsonify({"success": False, "error": "Invalid deck ID"})
 
-@app.route('/chess/<room>')
-def chess_room(room):
+@app.route('/chess')
+def chess_room():
     if 'username' not in session:
         return redirect(url_for('login'))
-    return render_template('chess.html', room=room, username=session['username'])
+    return render_template('chess.html', username=session['username'])
 
 @app.route('/deckbuilder')
 def deckbuilder():
@@ -353,39 +381,119 @@ def logout():
 
 @socketio.on('join')
 def on_join(data):
-    room = data['room']
-    username = data['username']
-    skill = data['skill']
+    if 'username' not in session:
+        disconnect()
+        return
+
+    username = session['username']
+    sid = request.sid
+
+    # Client sends room, but we validate against session (set in /chess/<room>)
+    room = data.get('room')
+    if not room:
+        emit("error", {'msg': "Invalid or unauthorized room"}, to=sid)
+        disconnect()
+        return
+
     join_room(room)
+
     if room not in games:
         games[room] = {
-            'board': None, 
-            'turn': 'white', 
-            'players': {}
+            'board': None,
+            'turn': 'white',
+            'players': {}  # color → Player object
         }
+
     game = games[room]
-    if len(game['players']) < 2:
-        color = 'white' if len(game['players']) == 0 else 'black'
-        game['players'][color] = Player(
-            username=username, 
-            request_sid=request.sid,
-            system_id=skill,
-            deck=None
-        )
-        emit('message', {'msg': f'Joined as {color}'}, to=request.sid)
-        if len(game['players']) == 1:
-            emit('waiting', to=request.sid)
-        if len(game['players']) == 2:
-            board = Board()
-            game['board'] = board
-            game['turn'] = 'white'
-            for col, player in game['players'].items():
-                sid = player.sid
-                opponent = game['usernames']['black' if col == 'white' else 'white']
-                emit('start', {'color': col, 'opponent': opponent}, to=sid)
-            emit('turn', {'turn': 'white'}, room=room)
+
+    # Load and validate active deck
+    current_player_deck = get_active_deck_details(username)
+    if not current_player_deck:
+        emit("error", {'msg': "No active deck selected. Please go to Deck Builder."}, to=sid)
+        disconnect()
+        return
+
+    deck_cards = change_json_card_id_list_into_card_object(current_player_deck["deck"])
+    if not deck_cards:
+        emit("error", {'msg': "Your deck contains invalid cards."}, to=sid)
+        disconnect()
+        return
+
+    deck = Deck(deck_cards)
+
+    system = change_json_system_id_into_system_object(current_player_deck["system"])
+    if not system:
+        emit("error", {'msg': "Invalid system in active deck."}, to=sid)
+        disconnect()
+        return
+
+    # Prevent more than 2 players
+    if len(game['players']) >= 2:
+        emit('message', {'msg': 'This room is full'}, to=sid)
+        return
+
+    # Assign color
+    color = 'white' if len(game['players']) == 0 else 'black'
+
+    # Store player
+    game['players'][color] = Player(
+        username=username,
+        request_sid=sid,
+        deck=deck,
+        system=system
+    )
+    
+    session['room'] = room
+
+    emit('message', {'msg': f'You joined as {color.capitalize()}'}, to=sid)
+
+    if len(game['players']) == 1:
+        emit('waiting', to=sid)
     else:
-        emit('message', {'msg': 'Room full'}, to=request.sid)
+        # Game starts!
+        board = Board()
+        game['board'] = board
+        game['turn'] = 'white'
+
+        white_player = game['players']['white']
+        black_player = game['players']['black']
+
+        # Notify both players
+        emit('start', {
+            'color': 'white',
+            'opponent': black_player.username
+        }, to=white_player.sid)
+
+        emit('start', {
+            'color': 'black',
+            'opponent': white_player.username
+        }, to=black_player.sid)
+
+        emit('turn', {'turn': 'white'}, room=room)
+
+@socketio.on('get_client_game_data')
+def on_get_client_game_data(data):
+    sid = request.sid
+    
+    if 'username' not in session or 'room' not in session:
+        emit("error", {'msg': "Session expired. Please log in again."}, to=sid)
+        disconnect()
+        return
+
+    username = session['username']
+    room = session['room']
+    
+    current_player_deck = get_active_deck_details(username)
+    
+    if not current_player_deck:
+        emit("error", {'msg': "No active deck selected. Please select one in Deck Builder."}, to=sid)
+        disconnect()
+        return
+
+    emit("client_game_data_got", {
+        "system": current_player_deck["system"],
+        "deck": current_player_deck["deck"]
+    }, to=sid)
 
 @socketio.on('make_move')
 def on_make_move(data):
@@ -409,14 +517,14 @@ def on_make_move(data):
     
     promotion = None
     is_opponent_in_check = False
+    success = True
     
     emit('move_made', {
-        'room': room,
         'move': {
             'from': move_data['from'],
             'to': move_data['to'],
             'promotion': promotion,
-            'enemy_in_check': is_opponent_in_check
+            'success': success
         }
     }, room=room)
 
@@ -440,6 +548,62 @@ def on_resign(data):
     emit('game_over', {'winner': winner, 'msg': f'{winner.capitalize()} wins by resignation!'}, room=room)
     del games[room]
 
+@socketio.on('disconnect')
+def on_disconnect():
+    """
+    Automatically clean up the game room if a player disconnects.
+    Called whenever a client loses connection.
+    """
+    sid = request.sid
+    username = session.get('username')
+    print(f"Player {username} is found disconnected.")
+
+    if not username:
+        return  # Not logged in, nothing to clean
+
+    room = session.get('room')
+    print(f"Checking if room {room} exists...")
+    if not room or room not in games:
+        return
+
+    game = games[room]
+    print(f"Checking if game exists...")
+
+    # Find which player disconnected
+    disconnected_color = None
+    for color, player in game['players'].items():
+        if player.sid == sid:
+            disconnected_color = color
+            break
+
+    if not disconnected_color:
+        return  # Wasn't a player in the game
+
+    # Notify the remaining player (if any) that opponent left
+    opponent_color = 'black' if disconnected_color == 'white' else 'white'
+    opponent_player = game['players'].get(opponent_color)
+
+    if opponent_player:
+        emit('game_over', {
+            'winner': opponent_color,
+            'msg': f'{username} disconnected. You win by forfeit!'
+        }, to=opponent_player.sid)
+
+    # Optional: Update leaderboard (win by forfeit)
+    leaderboard = load_leaderboard()
+    if not leaderboard:
+        leaderboard = {}
+    if opponent_player:
+        winner_name = opponent_player.username
+        leaderboard[winner_name] = leaderboard.get(winner_name, 0) + 1
+        save_leaderboard(leaderboard)
+
+    # Clean up the room
+    print(f"Player {username} ({disconnected_color}) confirmed be disconnected. Destroying room {room}")
+    del games[room]
+
+    # Optional: clear session room
+    session.pop('room', None)
 
 if __name__ == '__main__':
     server_start()

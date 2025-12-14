@@ -9,6 +9,7 @@ from copy import deepcopy
 from typing import List, Dict, Any
 
 from card_related.card_driver import Deck, Card
+from card_related.system_driver import System
 
 
 class Player:
@@ -35,7 +36,7 @@ class Player:
         self,
         username: str,
         request_sid: str,
-        system_id: int,
+        system: System,
         deck: Deck
     ) -> None:
         """
@@ -44,12 +45,12 @@ class Player:
         Args:
             username: Visible name of the player.
             request_sid: SocketIO session ID (obtained from ``request.sid`` in the controller).
-            system_id: Unique persistent ID used across matches and in the database.
+            system: Unique persistent ID used across matches and in the database.
             deck: The Deck this player will use for the game.
         """
         self.username = username
         self.sid = request_sid
-        self.system_id = system_id
+        self.system = system
 
         self.original_deck = deck
         self.deck: Deck = deepcopy(deck)
@@ -84,7 +85,7 @@ class Player:
         """
         return {
             "username": self.username,
-            "system_id": self.system_id,
+            "system": self.system,
             "sid": self.sid,
             "hand_size": len(self.hand),
             "deck_size": len(self.deck.cards),
@@ -97,12 +98,12 @@ class Player:
     # ------------------------------------------------------------------ #
 
     def __repr__(self) -> str:
-        return f"<Player {self.username} (id={self.system_id}) sid={self.sid}>"
+        return f"<Player {self.username} (id={self.system}) sid={self.sid}>"
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, Player):
             return False
-        return self.system_id == other.system_id
+        return self.system == other.system
 
     def __hash__(self) -> int:
-        return hash(self.system_id)
+        return hash(self.system)

@@ -68,10 +68,10 @@ class Card(StatusControllable):
     Each actual object in play gets its own UUID so it can be tracked individually.
     """
 
-    def __init__(self, name: str, id: int, desc: str, cost: int) -> None:
+    def __init__(self, name: str, id: str, desc: str, cost: int) -> None:
         super().__init__()
         self.name: str = name
-        self.id: int = id              # template identifier
+        self.id: str = id              # template identifier
         self.uuid: UUID = UUID(int=0)  # overwritten when added to a deck
         self.desc: str = desc
         self.cost: int = cost

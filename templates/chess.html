@@ -25,54 +25,78 @@ Chess Online Ultimate - Chess Page
 
 {% block content %}
 
-<div id="game-container">
-  <div id="enemy-area" class="hand-area-wrapper row">
+<!-- Waiting Screen Overlay -->
+<div id="waiting-screen" class="waiting-overlay">
+  <div class="waiting-content text-center">
+    <div class="spinner-border text-primary mb-4" role="status" style="width: 4rem; height: 4rem;">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <h3 id="room-name-holder" class="fw-bold mb-3">Room Name: Room 114514</h3>
+    <h3 class="fw-bold mb-3">Waiting for opponent...</h3>
+    <p class="text-muted mb-4">Finding a worthy challenger</p>
     
-    <div id="enemy-deck-area" class="deck-area col">
-
+    <div class="waiting-animation">
+      <i class="fas fa-chess-king fa-3x text-light opacity-25"></i>
+      <i class="fas fa-chess-queen fa-3x text-light opacity-25 ms-3"></i>
+      <i class="fas fa-chess-rook fa-3x text-light opacity-25 ms-3"></i>
     </div>
 
-    <div id="enemy-hand-area" class="hand-area col-6">
-
+    <div class="mt-5">
+      <small class="text-muted">You can close this tab and return later — your spot is reserved</small>
     </div>
-
   </div>
+</div>
 
-  <div id="game-board" class="d-flex justify-content-center align-items-center my-4">
-    <div class="chessboard-wrapper position-relative">
+<div id="game-screen" style="display: none">
+  <div id="game-container">
+    <div id="enemy-area" class="hand-area-wrapper row">
       
-      <div class="chessboard">
+      <div id="enemy-deck-area" class="deck-area col">
+
       </div>
 
-      <!-- Optional: Turn indicator or game status -->
-      <div class="game-status text-center mt-3">
-        <h5 id="turn-player-caption" class="mb-0">White to move</h5>
+      <div id="enemy-hand-area" class="hand-area col-6">
+
       </div>
 
-      <button id="change-hand-visibility-btn" class="btn btn-outline-primary">
-        Press <strong>Here</strong> or [C]<br> to show/hide hands
-      </button>
     </div>
+
+    <div id="game-board" class="d-flex justify-content-center align-items-center my-4">
+      <div class="chessboard-wrapper position-relative">
+        
+        <div class="chessboard">
+        </div>
+
+        <!-- Optional: Turn indicator or game status -->
+        <div class="game-status text-center mt-3">
+          <h5 id="turn-player-status" class="mb-0">White to move</h5>
+        </div>
+
+        <button id="change-hand-visibility-btn" class="btn btn-outline-primary">
+          Press <strong>Here</strong> or [C]<br> to show/hide hands
+        </button>
+      </div>
+    </div>
+
+    <div id="player-area" class="hand-area-wrapper row">
+      
+      <div id="card-preview" class="card preview-card">
+        <div class="card-body">
+          <h5 class="card-title">Select a Card</h5>
+        </div>
+      </div>
+      
+      <div id="friendly-deck-area" class="deck-area">
+
+      </div>
+
+      <div id="friendly-hand-area" class="hand-area col-6">
+
+      </div>
+
+    </div>
+
   </div>
-
-  <div id="player-area" class="hand-area-wrapper row">
-    
-    <div id="card-preview" class="card preview-card">
-      <div class="card-body">
-        <h5 class="card-title">Select a Card</h5>
-      </div>
-    </div>
-    
-    <div id="friendly-deck-area" class="deck-area">
-
-    </div>
-
-    <div id="friendly-hand-area" class="hand-area col-6">
-
-    </div>
-
-  </div>
-
 </div>
 
 {% endblock %}

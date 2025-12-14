@@ -29,17 +29,16 @@ class LobbyDeckSelector {
   renderDeckList() {
     const container = document.getElementById("deckSelectionList");
 
-    if (this.myDecks.length === 0) {
+    if (!this.myDecks || this.myDecks.length === 0) {
       container.innerHTML = `
         <div class="card game-card deck-nav-card text-center py-5 mx-5 position-relative">
           <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
           <p class="text-muted">No decks found</p>
-          <a href="/deckbuilder" class="btn btn-outline-primary mt-3">
-            <i class="fas fa-plus me-2"></i>Create Your First Deck
+          <a href="/deckbuilder" class="btn btn-outline-primary">
+            Create Your First Deck
           </a>
         </div>
       `;
-      document.getElementById("confirmSelectDeck").disabled = true;
       return;
     }
 
@@ -83,7 +82,9 @@ class LobbyDeckSelector {
   }
 
   renderSelectActiveDeckBtn() {
-    const selectActiveDeckBtn = document.getElementById("select-active-deck-btn");
+    const selectActiveDeckBtn = document.getElementById(
+      "select-active-deck-btn"
+    );
     const deckTitle = selectActiveDeckBtn.querySelector(".card-title");
     if (this.isAnyDeckActive) {
       deckTitle.innerHTML = `${this.selectedDeckName}`;
@@ -112,6 +113,7 @@ class LobbyDeckSelector {
           `Set active deck failed!<br/>Reason: ${result.error}`
         );
       }
+      this.renderDeckList();
     } catch (err) {
       await modal.error("Save failed");
       console.error(err);
@@ -120,8 +122,6 @@ class LobbyDeckSelector {
 }
 
 $(document).ready(async function () {
-  const socket = io();
-
   // Initialize selector
   const deckSelector = new LobbyDeckSelector();
   await deckSelector.loadAndShowDecks();
@@ -134,22 +134,11 @@ $(document).ready(async function () {
     });
 
   document.getElementById("confirmCreateRoom").addEventListener("click", () => {
-    const roomName = document.getElementById("roomNameInput").value.trim();
-    const skill = document.getElementById("skillInput").value;
-
-    if (!roomName) {
-      alert("Please enter a room name!");
-      return;
-    }
+    const roomName =
+      document.getElementById("roomNameInput").value.trim() || "Room 114514";
 
     // Redirect to chess room
-    window.location.href = `/chess/${encodeURIComponent(
-      roomName
-    )}?skill=${skill}`;
-  });
-
-  socket.on("connect", () => {
-    console.log("Connected to server");
-    // You can emit 'request_rooms' here if you implement live lobby
+    window.localStorage.setItem("localRoomName", roomName);
+    window.location.href = `/chess`;
   });
 });

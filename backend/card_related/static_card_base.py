@@ -15,7 +15,7 @@ from typing import List, Optional
 from card_related.card_driver import Card
 
 
-class StaticCardBase:
+class StaticCardLikeBase:
     """
     Global singleton containing every card template used in the game.
 
@@ -30,9 +30,9 @@ class StaticCardBase:
         StaticCardBase.register(fire_slime)
     """
 
-    _instance: Optional["StaticCardBase"] = None
+    _instance: Optional["StaticCardLikeBase"] = None
 
-    def __new__(cls) -> "StaticCardBase":
+    def __new__(cls) -> "StaticCardLikeBase":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
@@ -41,7 +41,7 @@ class StaticCardBase:
         if not hasattr(self, "initialized"):
             self.card_base: List[Card] = []
             self._by_name: dict[str, Card] = {}
-            self._by_id: dict[int, Card] = {}
+            self._by_id: dict[str, Card] = {}
             self.initialized = True
 
     # ------------------------------------------------------------------ #
@@ -78,7 +78,7 @@ class StaticCardBase:
     # ------------------------------------------------------------------ #
 
     @classmethod
-    def instance(cls) -> "StaticCardBase":
+    def instance(cls) -> "StaticCardLikeBase":
         """Get the singleton instance."""
         if cls._instance is None:
             cls._instance = cls()
@@ -88,7 +88,7 @@ class StaticCardBase:
         """Retrieve a card template by exact name (case-sensitive)."""
         return self._by_name.get(name)
 
-    def get_by_id(self, card_id: int) -> Optional[Card]:
+    def get_by_id(self, card_id: str) -> Optional[Card]:
         """Retrieve a card template by its template id."""
         return self._by_id.get(card_id)
 
@@ -120,3 +120,12 @@ class StaticCardBase:
 
     def __repr__(self) -> str:
         return f"<StaticCardBase cards={len(self.card_base)}>"
+
+class StaticCardBase(StaticCardLikeBase):
+    
+    def __init__(self):
+        super().__init__()
+class StaticSystemBase(StaticCardLikeBase):
+    
+    def __init__(self):
+        super().__init__()
