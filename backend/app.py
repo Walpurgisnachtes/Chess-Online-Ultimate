@@ -47,7 +47,23 @@ USERS_FILE = 'users.json'
 LEADERBOARD_FILE = 'leaderboard.json'
 PLAYER_DECK_FILE = 'player_decks.json'
 
-games: Dict[str, Dict[str, Union[str, Board, Player]]] = {}
+games: Dict[str, Dict[str, Union[str, Board, Dict[str, Player], GameController]]] = {}
+
+# Decorators
+def set_event_handler(event_name: str):
+    """
+    Decorator to register a function as an event listener.
+    Usage:
+        @set_event_handler("select")
+        def handle_select_event(data):
+            ...
+    """
+    def decorator(func):
+        global_event_handler.on(event_name, func)
+        return func  # Return the original function (useful if needed elsewhere)
+    return decorator
+
+# Helper functions
 
 def get_full_file_path(dirname: str, filename: str) -> str:
     return os.path.join(os.path.dirname(os.path.dirname(__file__)), dirname, filename)
@@ -112,6 +128,18 @@ def change_json_card_id_list_into_card_object(card_ids: List[str]) -> List[Card]
             return []
     return card_list
 
+def change_card_object_into_json_card_object(cards: List[Card]) -> List[Dict[str, str]]:
+    return [
+        {
+            "name": card.name,
+            "description": card.desc,
+            "img": card.img,
+            "cost": card.cost,
+            "type": card.type,
+            "id": card.id
+        } for card in cards
+    ]
+
 def change_json_system_object_into_system_id(system: Any) -> str:
     return system["id"]
 
@@ -152,8 +180,10 @@ def server_start():
         card_obj = Card(
             name=card['name'],
             id=card['id'],
+            img=card['img'],
             desc=card.get('description', 'No description'),
-            cost=int(card.get('cost') or 0)  # safe int conversion
+            cost=int(card.get('cost') or 0),  # safe int conversion
+            type=card.get('type', 'attack')
         )
         card_objects.append(card_obj)
         
@@ -162,6 +192,7 @@ def server_start():
         system_obj = System(
             name=system['name'],
             id=system['id'],
+            img=system['img'],
             desc=system.get('description', 'No description')
         )
         system_objects.append(system_obj)
@@ -474,9 +505,13 @@ def on_join(data):
         black_player = game['players']['black']
         
         game['controller'] = GameController(
+            room=room,
             board=board, 
-            players={"white": white_player, "black": black_player}
+            players={"white": white_player, "black": black_player},
+            event_handler=global_event_handler
         )
+        
+        game['controller'].game_start()
 
         # Notify both players
         emit('start', {
@@ -502,29 +537,39 @@ def on_get_client_game_data(data):
 
     username = session['username']
     room = session['room']
+
+    if room not in games:
+        emit("error", {'msg': "Session expired. Please log in again."}, to=sid)
+        disconnect()
+        return
     
-    current_player_deck = get_active_deck_details(username)
+    game = games[room]
+
+    white_player: Player = game['players']['white']
+    black_player: Player = game['players']['black']
     
-    if not current_player_deck:
-        emit("error", {'msg': "No active deck selected. Please select one in Deck Builder."}, to=sid)
+    players_by_username = {
+        white_player.username: white_player,
+        black_player.username: black_player
+    }
+
+    requesting_player = players_by_username.get(username)
+    if not requesting_player:
+        emit("error", {'msg': "Session expired. Please log in again."}, to=sid)
         disconnect()
         return
 
+    # Determine enemy automatically
+    requesting_enemy_player = white_player if requesting_player is black_player else black_player
+    
+    requesting_player_hand = change_card_object_into_json_card_object(requesting_player.hand)
+    requesting_enemy_hand_count = len(requesting_enemy_player.hand)
+
     emit("client_game_data_got", {
-        "friendlyHand": current_player_deck["system"],
-        "enemyHandCount": current_player_deck["deck"]
+        "friendlyHand": requesting_player_hand,
+        "enemyHandCount": requesting_enemy_hand_count
     }, to=sid)
 
-# Bridge: Controller → Frontend (open selector UI)
-def handle_select_event(data):
-    room = data['room']
-    
-    emit("open_selector", {
-        "predicate": data['predicate'],
-        "current_player": data['current_player']
-    }, room=room)
-    
-# Bridge: Frontend → Controller
 @socketio.on('chosen_by_selector')
 def on_chosen_by_selector(data):
     room = data.get('room')
@@ -651,6 +696,27 @@ def on_disconnect():
 
     # Optional: clear session room
     session.pop('room', None)
+
+# Event listening bridges
+
+# Bridge: open selector UI
+@set_event_handler("select")
+def handle_select_event(data):
+    room = data['room']
+    
+    emit("open_selector", {
+        "predicate": data['predicate'],
+        "current_player": data['current_player']
+    }, room=room)
+
+# Bridge: send chess piece removal signal
+@set_event_handler("remove_piece")
+def handle_piece_removal_event(data):
+    room = data['room']
+    
+    emit("open_selector", {
+        "position": data['position']
+    }, room=room)
 
 if __name__ == '__main__':
     server_start()

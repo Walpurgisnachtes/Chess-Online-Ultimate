@@ -58,7 +58,7 @@ class ChessLogicLocalController {
 
     this.socket.on("start", async (data) => {
       await this.socket.emit("get_client_game_data", {});
-      this.startGame();
+      this.startGame(data);
     });
 
     this.socket.on("move_made", async (data) => {
@@ -103,7 +103,7 @@ class ChessLogicLocalController {
     });
   }
 
-  startGame() {
+  startGame(data) {
     this.myColor = data.color;
 
     const waitingScreen = document.getElementById("waiting-screen");
@@ -196,7 +196,7 @@ class ChessLogicLocalController {
 
   async disconnect(msg) {
     await modal.error(msg);
-    window.location.href = "/login";
+    //window.location.href = "/login";
   }
 }
 
