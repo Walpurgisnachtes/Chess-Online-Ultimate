@@ -231,6 +231,10 @@ html[data-bs-theme="dark"] .deck-nav-card {
     height: 20vh;
   }
 
+  .deck-area .card-cost-badge {
+    width: 10%;
+  }
+
   .deck-preview-card {
     bottom: 5%;
     left: 50%;

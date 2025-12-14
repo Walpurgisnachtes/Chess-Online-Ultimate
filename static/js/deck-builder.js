@@ -110,7 +110,7 @@ class DeckBuilder {
     this.currentDeckId = null;
     this.currentDeckName = null;
     this.currentDeckSystem = null;
-    this.currentDeckSystemID = null;
+    this.currentDeckSystemID = "90001";
     this.currentDeckCards = [];
     this.currentDeckCardIDs = [];
     this.currentDeckActive = false;
@@ -466,6 +466,8 @@ class DeckBuilder {
       cards: this.currentDeckCards,
       active: _.toString(this.currentDeckActive),
     };
+
+    console.log(this.myDecks, deckData)
 
     try {
       const res = await fetch("/api/save_deck", {
