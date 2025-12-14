@@ -169,6 +169,13 @@
   opacity: 1;
 }
 
+.deck-card-minimize h6 {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 85%;
+}
+
 /* Deck builder preview Card Styling */
 .deck-preview-card {
   position: absolute;
