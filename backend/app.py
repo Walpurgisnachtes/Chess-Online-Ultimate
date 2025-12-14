@@ -16,7 +16,10 @@ from chess_related.board import Board
 from chess_related.piece import BasePiece, KingPiece, QueenPiece, BishopPiece, KnightPiece, RookPiece, PawnPiece, NonePiece
 from chess_related.chess_utils import *
 
+from controller_related.event_controller import EventHandler
+
 from player_related.player import Player
+from controller import GameController
 
 # Directories
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -35,6 +38,8 @@ app = Flask(
 app.json.sort_keys = False
 app.secret_key = secrets.token_bytes(32)
 socketio = SocketIO(app)
+
+global_event_handler = EventHandler()
 
 
 # Simulated database
@@ -168,6 +173,9 @@ def server_start():
     # 4. Register all systems
     system_base = StaticSystemBase.instance()
     system_base.register_many(system_objects)
+    
+    # 5. Register global event handler
+    global_event_handler.on("select", handle_select_event)
 
 @app.route('/')
 def no_path():
@@ -198,6 +206,7 @@ def login():
         return render_template('login.html', error="Invalid credentials")
     return render_template('login.html')
 
+# App routes
 
 @app.route('/chess')
 def chess():
@@ -379,6 +388,11 @@ def logout():
     session.pop('username', None)
     return redirect(url_for('login'))
 
+# Socket.IO stuffs
+@socketio.on('connect')
+def on_connect():
+    pass
+
 @socketio.on('join')
 def on_join(data):
     if 'username' not in session:
@@ -399,6 +413,7 @@ def on_join(data):
 
     if room not in games:
         games[room] = {
+            'controller': None,
             'board': None,
             'turn': 'white',
             'players': {}  # color → Player object
@@ -457,6 +472,11 @@ def on_join(data):
 
         white_player = game['players']['white']
         black_player = game['players']['black']
+        
+        game['controller'] = GameController(
+            board=board, 
+            players={"white": white_player, "black": black_player}
+        )
 
         # Notify both players
         emit('start', {
@@ -491,9 +511,32 @@ def on_get_client_game_data(data):
         return
 
     emit("client_game_data_got", {
-        "system": current_player_deck["system"],
-        "deck": current_player_deck["deck"]
+        "friendlyHand": current_player_deck["system"],
+        "enemyHandCount": current_player_deck["deck"]
     }, to=sid)
+
+# Bridge: Controller → Frontend (open selector UI)
+def handle_select_event(data):
+    room = data['room']
+    
+    emit("open_selector", {
+        "predicate": data['predicate'],
+        "current_player": data['current_player']
+    }, room=room)
+    
+# Bridge: Frontend → Controller
+@socketio.on('chosen_by_selector')
+def on_chosen_by_selector(data):
+    room = data.get('room')
+    selected = data.get('selected')
+
+    if room not in games:
+        return
+
+    controller: GameController = games[room].get('controller')
+    if controller:
+        # Forward to controller (resolves waiting select())
+        controller.resolve_selection(selected)
 
 @socketio.on('make_move')
 def on_make_move(data):
@@ -597,6 +640,10 @@ def on_disconnect():
         winner_name = opponent_player.username
         leaderboard[winner_name] = leaderboard.get(winner_name, 0) + 1
         save_leaderboard(leaderboard)
+    
+    controller: GameController = games[room].get('controller')
+    if controller and hasattr(controller, '_pending_selection'):
+        controller.cancel_selection()
 
     # Clean up the room
     print(f"Player {username} ({disconnected_color}) confirmed be disconnected. Destroying room {room}")

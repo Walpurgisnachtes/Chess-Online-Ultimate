@@ -42,6 +42,7 @@ class BasePiece:
         self,
         piece_name: PieceName,
         move_rule: List[PieceName],
+        color: str,
         *,
         spawning_point: str = "",
         is_capturable: bool = True,
@@ -50,6 +51,7 @@ class BasePiece:
     ) -> None:
         self._name = piece_name.value
         self._move_rule = [p.value for p in move_rule]
+        self.color = color
         self.status: List[StatusEffect] = []
         self.spawning_point = spawning_point
         self.is_capturable = is_capturable
@@ -135,7 +137,7 @@ class BasePiece:
         return self.name.capitalize()
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(name={self.name!r})"
+        return f"{self.__class__.__name__}[{self.color}](name={self.name!r})"
 
     def detail(self) -> str:
         """Rich debug representation showing all status details."""
@@ -169,33 +171,33 @@ class BasePiece:
 
 class KingPiece(BasePiece):
     """King — loss condition piece."""
-    def __init__(self) -> None:
-        super().__init__(PieceName.KING, [PieceName.KING], is_lose_on_capture=True, is_removable=False)
+    def __init__(self, color) -> None:
+        super().__init__(PieceName.KING, [PieceName.KING], color, is_lose_on_capture=True, is_removable=False)
 
 class QueenPiece(BasePiece):
     """Queen = Rook + Bishop."""
-    def __init__(self) -> None:
-        super().__init__(PieceName.QUEEN, [PieceName.BISHOP, PieceName.ROOK])
+    def __init__(self, color) -> None:
+        super().__init__(PieceName.QUEEN, [PieceName.BISHOP, PieceName.ROOK], color)
 
 class BishopPiece(BasePiece):
-    def __init__(self) -> None:
-        super().__init__(PieceName.BISHOP, [PieceName.BISHOP])
+    def __init__(self, color) -> None:
+        super().__init__(PieceName.BISHOP, [PieceName.BISHOP], color)
 
 class KnightPiece(BasePiece):
-    def __init__(self) -> None:
-        super().__init__(PieceName.KNIGHT, [PieceName.KNIGHT])
+    def __init__(self, color) -> None:
+        super().__init__(PieceName.KNIGHT, [PieceName.KNIGHT], color)
 
 class RookPiece(BasePiece):
-    def __init__(self) -> None:
-        super().__init__(PieceName.ROOK, [PieceName.ROOK])
+    def __init__(self, color) -> None:
+        super().__init__(PieceName.ROOK, [PieceName.ROOK], color)
 
 class PawnPiece(BasePiece):
-    def __init__(self) -> None:
-        super().__init__(PieceName.PAWN, [PieceName.PAWN])
+    def __init__(self, color) -> None:
+        super().__init__(PieceName.PAWN, [PieceName.PAWN], color)
 
 class NonePiece(BasePiece):
     def __init__(self):
-        super().__init__(PieceName.UNKNOWN, [])
+        super().__init__(PieceName.UNKNOWN, [], "none")
 
 # ────────────────────────────────────────────────────────────────────────────── #
 # Demo / Test
