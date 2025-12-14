@@ -3,7 +3,7 @@
  * 
  * Utility class responsible for dynamically generating an 8×8 chessboard
  * in the DOM. Designed to work with the existing CSS grid layout in
- * `fan-shape-cards.css` and `chess.html`.
+ * `cards.css` and `chess.html`.
  * 
  * Features:
  * - Creates 64 squares with correct light/dark coloring
