@@ -37,6 +37,7 @@ class GameController:
         self.board = board
         self.players = players
         self.event_handler = event_handler
+        self.card_event_handler = EventHandler()
         self.current_player = self.PLAYER_COLOR_WHITE
         
         card_base = StaticCardBase.instance()
@@ -238,19 +239,97 @@ class GameController:
         if self._pending_selection:
             self._pending_selection.set()
 
-    # Optional: timeout or cancel
     def cancel_selection(self):
         self._selection_result = None
         if self._pending_selection:
             self._pending_selection.resolved = True
     
+    def try_play_card_with_index_in_hand(self, hand_index: int) -> bool:
+        """
+        Validate and begin playing a card from the current player's hand.
+        Returns True if card is accepted and execution begins.
+        """
+        try:
+            hand_index = int(hand_index)
+        except (ValueError, TypeError):
+            return False
+
+        current_player = self.players[self.current_player]
+        if hand_index < 0 or hand_index >= len(current_player.hand):
+            return False
+
+        card_instance = current_player.hand[hand_index]
+        if not card_instance:
+            return False
+
+        # Get prototype from StaticCardBase
+        card_prototype = StaticCardBase.instance().get_by_id(card_instance.id)
+        if not card_prototype:
+            return False
+
+        # Check prestige (mana) cost
+        if current_player.prestige < card_prototype.cost:
+            return False
+
+        # Deduct cost
+        current_player.prestige -= card_prototype.cost
+        self.card_event_handler.dispatch_event("card_play_prestige_reduced", data={
+            "card_id": [card_prototype.id],
+        })
+
+        # Remove from hand (will go to graveyard later)
+        current_player.graveyard.append(current_player.hand[hand_index])
+        del current_player.hand[hand_index]
+        self.card_event_handler.dispatch_event("card_sent_graveyard", data={
+            "card_id": [card_prototype.id],
+        })
+
+        # Dispatch acceptance event → app.py emits to frontend
+        self.event_handler.dispatch_event("card_play_accepted", data={
+            "room": self.room,
+            "player_color": self.current_player,
+            "card_id": card_prototype.id,
+            "hand_index": hand_index  # For frontend animation
+        })
+
+        # Now execute the card effect
+        self.execute_card(card_prototype)
+
+        return True
+
+    def execute_card(self, card_prototype):
+        """
+        Create card instance and run its exec()
+        """
+        # Dynamically load card class
+        card_class_name = f"Card{card_prototype.id}"
+        try:
+            card_module = import_module(f"cards.{card_prototype.id}")
+            card_class = getattr(card_module, card_class_name)
+        except (ImportError, AttributeError):
+            print(f"[ERROR] Card {card_prototype.id} class not found")
+            return
+
+        # Instantiate and execute
+        card_obj = card_class(controller=self)
+        card_obj.exec()
+    
+    def move_piece(self, move_object: Dict[str, str]) -> bool:
+        from_where = move_object.get("from", "a8")
+        to_where = move_object.get("to", "a1")
+        promotion = move_object.get("promotion", "NonePiece")
+    
     def game_start(self):
         for player in self.players.values():
-            self.event_handler.dispatch_event("game_start")
-            self.event_handler.dispatch_event("game_start_draw")
+            self.card_event_handler.dispatch_event("game_start")
+            self.card_event_handler.dispatch_event("game_start_draw")
+            player.deck.shuffle()
             drawn_cards = player.deck.draw_5()
             player.hand = drawn_cards
-            
+            self.card_event_handler.dispatch_event("card_drawn", data={
+                "card_id": [card.id for card in drawn_cards],
+            })
+    
     def remove_piece(self, piece_pos_square):
         self.board.remove_piece(piece_pos_square)
         self.event_handler.dispatch_event(

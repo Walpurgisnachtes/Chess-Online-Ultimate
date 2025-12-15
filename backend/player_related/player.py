@@ -51,6 +51,8 @@ class Player:
         self.username = username
         self.sid = request_sid
         self.system = system
+        
+        self.prestige: int = 0
 
         self.original_deck = deck
         self.deck: Deck = deepcopy(deck)

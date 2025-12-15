@@ -538,7 +538,7 @@ def on_get_client_game_data(data):
     username = session['username']
     room = session['room']
 
-    if room not in games:
+    if not room or room not in games:
         emit("error", {'msg': "Session expired. Please log in again."}, to=sid)
         disconnect()
         return
@@ -570,12 +570,54 @@ def on_get_client_game_data(data):
         "enemyHandCount": requesting_enemy_hand_count
     }, to=sid)
 
+@socketio.on('played_card')
+def on_card_try_played(data):
+    """
+    Frontend tells server: "Player wants to play a card from hand[index]"
+    """
+    played_card_index = data.get('played_card_in_hand_index')
+    if played_card_index is None:
+        return
+
+    sid = request.sid
+    username = session.get('username')
+    if not username:
+        emit("error", {"msg": "Not logged in"}, to=sid)
+        return
+
+    room = session.get('room')
+    if not room or room not in games:
+        emit("error", {"msg": "Invalid room"}, to=sid)
+        return
+
+    game = games[room]
+    controller = game.get('controller')
+    if not controller:
+        emit("error", {"msg": "Game not started yet"}, to=sid)
+        return
+
+    # Find which player is trying to play
+    current_player_color = controller.current_player
+    current_player_obj = game['players'].get(current_player_color)
+
+    if current_player_obj.sid != sid:
+        emit("error", {"msg": "It's not your turn!"}, to=sid)
+        return
+
+    # Ask controller to validate and play the card
+    success = controller.try_play_card_with_index_in_hand(played_card_index)
+
+    if not success:
+        emit("reject_play_card", {"msg": "Cannot play this card"}, to=sid)
+
 @socketio.on('chosen_by_selector')
 def on_chosen_by_selector(data):
-    room = data.get('room')
+    room = session.get('room')
+    sid = request.sid
     selected = data.get('selected')
 
-    if room not in games:
+    if not room or room not in games:
+        emit("error", {"msg": "Invalid room"}, to=sid)
         return
 
     controller: GameController = games[room].get('controller')
@@ -585,27 +627,39 @@ def on_chosen_by_selector(data):
 
 @socketio.on('make_move')
 def on_make_move(data):
-    room = data['room']
     move_data = data['move']
-    if room not in games:
-        return
-    game = games[room]
     sid = request.sid
+
+    room = session.get('room')
+
+    if not room or room not in games:
+        emit("error", {"msg": "Invalid room"}, to=sid)
+        return
+    
+    game = games[room]
+    controller: GameController = game.get("controller")
+    
     for col, s in game['players'].items():
         if s == sid:
             color = col
             break
     else:
         return
-    turn_color = 'white' if game['turn'] == 'w' else 'black'
-    opponent_color = 'black' if game['turn'] == 'w' else 'white'
-    if color != turn_color:
-        emit('message', {'msg': 'Not your turn'}, to=sid)
+    
+    # Find which player is trying to play
+    current_player_color = controller.current_player
+    current_player_obj = game['players'].get(current_player_color)
+
+    if current_player_obj.sid != sid:
+        emit("error", {"msg": "It's not your turn!"}, to=sid)
         return
     
-    promotion = None
-    is_opponent_in_check = False
-    success = True
+    promotion = move_data["promotion"]
+    success = controller.try_move_piece({
+            'from': move_data['from'],
+            'to': move_data['to'],
+            'promotion': promotion,
+    })
     
     emit('move_made', {
         'move': {
@@ -716,6 +770,16 @@ def handle_piece_removal_event(data):
     
     emit("open_selector", {
         "position": data['position']
+    }, room=room)
+    
+# Bridge: validate card playing
+@set_event_handler("card_play_accepted")
+def handle_card_play_accepted(data):
+    room = data['room']
+    emit("accept_play_card", {
+        "card_id": data['card_id'],
+        "player_color": data['player_color'],
+        "hand_index": data['hand_index']
     }, room=room)
 
 if __name__ == '__main__':
