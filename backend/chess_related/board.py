@@ -11,9 +11,25 @@ class Board:
     """
 
     def __init__(self):
+        self.BOARD_DIMENSION = 8
         self.board: List[List[Optional[BasePiece]]] = [
             [NonePiece() for _ in range(8)] for _ in range(8)
         ]
+    
+    @staticmethod
+    def array_index_to_square_notation(i: int, j: int) -> str:
+        """
+        Convert zero-based array coordinates (row i, column j) into
+        algebraic chess notation (e.g., a8, h1).
+
+        Top-left array cell (0, 0) maps to a8 by default.
+        """
+        if not (0 <= i < Board.BOARD_DIMENSION and 0 <= j < Board.BOARD_DIMENSION):
+            raise ValueError(f"Board indices out of range: ({i}, {j})")
+
+        file_char = chr(ord("a") + j)
+        rank = Board.BOARD_DIMENSION - i
+        return f"{file_char}{rank}"
 
     def find_by_square(self, square: str) -> Optional[BasePiece]:
         """

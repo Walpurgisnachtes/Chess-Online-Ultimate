@@ -33,8 +33,7 @@ class Card10001:
             "type": "piece",
             "filter": {
                 "color": "enemy",           # Enemy relative to current player
-                "piece_type": ["pawn", "knight", "bishop"],  # Pawn + minor pieces
-                "on_board": True
+                "piece_type": ["PawnPiece", "KnightPiece", "BishopPiece"]
             },
             "min": 1,
             "max": 1,
