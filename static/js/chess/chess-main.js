@@ -20,6 +20,7 @@ class ChessLogicLocalController {
     this.selectedSquare = null;
     this.myColor = null;
     this.in_check = false;
+    this.is_hand_hidden = false;
   }
 
   async init() {
@@ -49,8 +50,6 @@ class ChessLogicLocalController {
       if (_.isArray(cardDataArray)) {
         CardGenerationHelper.generateHandCards(cardDataArray);
         CardGenerationHelper.generateEnemyHandCards(enemyHandCount);
-
-        BoardGenerationHelper.generateChessBoard(); // Empty grid
       } else {
         await this.disconnect("Session expired. Please log in again.");
       }
@@ -120,6 +119,16 @@ class ChessLogicLocalController {
       gameScreen.style.display = "block";
     }
 
+    const changeHandVisibilityBtn = gameScreen.querySelector(
+      "#change-hand-visibility-btn"
+    );
+    changeHandVisibilityBtn.addEventListener("click", () =>
+      this.changeHandVisibility()
+    );
+    document.addEventListener("keyup", (event) => {
+      if (event.key === "c") this.changeHandVisibility();
+    });
+
     this.game.load(
       data.fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     );
@@ -139,6 +148,22 @@ class ChessLogicLocalController {
       room: this.roomName,
     });
     console.log("joined");
+  }
+
+  changeHandVisibility() {
+    if (this.is_hand_hidden) {
+      const handWrappers = document.querySelectorAll(".hand-area-wrapper");
+      _.forEach(handWrappers, (e) => {
+        e.classList.remove("hidden");
+      });
+      this.is_hand_hidden = false;
+    } else {
+      const handWrappers = document.querySelectorAll(".hand-area-wrapper");
+      _.forEach(handWrappers, (e) => {
+        e.classList.add("hidden");
+      });
+      this.is_hand_hidden = true;
+    }
   }
 
   attachSquareClicks() {

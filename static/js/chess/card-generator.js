@@ -9,13 +9,15 @@ class CardGenerator {
    */
   #previewCache = new Map();
 
+  cardZIndexLevel = 100;
+
   /**
    * Generates the player's hand in a fan shape and pre-builds preview HTML.
    * @param {Array<{name:string, description:string, img:string}>} cardsData
    */
   generateHandCards(cardsData) {
     const playerArea = document.querySelector("#player-area .hand-area");
-    const previewEl = document.getElementById("card-preview");
+    const previewEl = document.getElementById("in-game-preview-card");
 
     if (!playerArea) playerArea.innerHTML = "";
     this.#previewCache.clear();
@@ -31,26 +33,35 @@ class CardGenerator {
       // Create small hand card
       const cardDiv = document.createElement("div");
       cardDiv.className = "card game-card friendly-card";
+      cardDiv.dataset.cardType = data.type;
       cardDiv.style.setProperty("--rot", `${rotation}deg`);
-      cardDiv.style.zIndex = index;
+      cardDiv.style.zIndex = index + this.cardZIndexLevel;
 
       cardDiv.innerHTML = `
-        ${data.img ? `<img src="${data.img}" class="friendly-card-img-top card-img-top" loading="lazy">` : ""}
+        <div class="card-cost-badge">${data.cost}</div>
+        ${
+          data.img
+            ? `<img src="${data.img}" class="friendly-card-img-top card-img-top" loading="lazy">`
+            : ""
+        }
         <div class="card-body py-0">
-          <h3 class="card-title fs-6 h-100 d-flex justify-content-center align-items-center text-center">
+          <h3 class="card-title h-100 d-flex justify-content-center align-items-center text-center text-dark">
             ${data.name}
           </h3>
         </div>
       `;
 
       // ────── PRE-BUILD PREVIEW HTML ONCE ──────
-      const description = this.replaceCardTextSpecialCharacters(data.description || "");
+      const description = this.replaceCardTextSpecialCharacters(
+        data.description || ""
+      );
 
       const previewHTML = `
-        ${data.img ? `<img src="${data.img}" class="preview-card-img-top card-img-top pt-3" loading="lazy">` : ""}
-        <div class="card-body">
-          <h3 class="card-title">${data.name}</h3>
-          <p class="card-text">${description || "No description available."}</p>
+        <div id="previewCostBadge" class="card-cost-badge">${data.cost}</div>
+          <img id="previewImg" src="${data.img}" class="in-game-preview-card-img-top card-img-top">
+          <div class="card-body">
+            <h3 id="previewName" class="card-title">${data.name}</h3>
+            <p id="previewDesc" class="card-text">${description}</p>
         </div>
       `;
 
@@ -88,7 +99,7 @@ class CardGenerator {
       const cardDiv = document.createElement("div");
       cardDiv.className = "game-card enemy-card";
       cardDiv.style.setProperty("--rot", `${rotation}deg`);
-      cardDiv.style.zIndex = i;
+      cardDiv.style.zIndex = i + this.cardZIndexLevel;
       enemyArea.appendChild(cardDiv);
     }
   }
@@ -101,7 +112,7 @@ class CardGenerator {
   replaceCardTextSpecialCharacters(text) {
     if (!text) return "";
     let result = text.replace(/\[LINEBREAK\]/g, "<br>");
-    result = result.replace(/\*(.+?)\*/g, '<strong>$1</strong>');
+    result = result.replace(/\*(.+?)\*/g, "<strong>$1</strong>");
     return result;
   }
 }

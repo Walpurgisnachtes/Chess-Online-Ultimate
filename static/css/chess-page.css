@@ -3,3 +3,21 @@
   top: -25%;
   left: -60%;
 }
+
+.game-status {
+  position: absolute;
+  top: 40%;
+  left: -61%;
+}
+
+@media (max-height: 800px) {
+  #change-hand-visibility-btn {
+    top: 0%;
+  }
+
+  .game-status {
+    position: absolute;
+    top: 30%;
+    left: -62%;
+  }
+}

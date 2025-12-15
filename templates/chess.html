@@ -68,7 +68,7 @@ Chess Online Ultimate - Chess Page
         </div>
 
         <!-- Optional: Turn indicator or game status -->
-        <div class="game-status text-center mt-3">
+        <div class="game-status text-center mt-3 border border-dark p-4">
           <h5 id="turn-player-status" class="mb-0">White to move</h5>
         </div>
 
@@ -80,12 +80,17 @@ Chess Online Ultimate - Chess Page
 
     <div id="player-area" class="hand-area-wrapper row">
       
-      <div id="card-preview" class="card preview-card">
-        <div class="card-body">
-          <h5 class="card-title">Select a Card</h5>
+      <div id="largePreview" class="text-center">
+        <div id="in-game-preview-card" class="card in-game-preview-card collection-card game-card d-inline-block">
+          <div id="previewCostBadge" class="card-cost-badge"></div>
+          <img id="previewImg" src="" class="deck-preview-card-img-top card-img-top">
+          <div class="card-body">
+            <h3 id="previewName" class="card-title"></h3>
+            <p id="previewDesc" class="card-text"></p>
+          </div>
         </div>
       </div>
-      
+
       <div id="friendly-deck-area" class="deck-area">
 
       </div>
