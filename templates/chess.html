@@ -68,9 +68,9 @@ Chess Online Ultimate - Chess Page
         </div>
 
         <!-- Optional: Turn indicator or game status -->
-        <div class="game-status text-center mt-3 border border-dark p-4">
+        <button id="game-status" class="game-status text-center mt-3 p-4 btn btn-outline-dark text-muted border border-3">
           <h5 id="turn-player-status" class="mb-0">White to move</h5>
-        </div>
+        </button>
 
         <button id="change-hand-visibility-btn" class="btn btn-outline-primary">
           Press <strong>Here</strong> or [C]<br> to show/hide hands
@@ -99,6 +99,26 @@ Chess Online Ultimate - Chess Page
 
       </div>
 
+    </div>
+
+    <div class="modal fade" 
+        id="promotion-selection-modal" 
+        tabindex="-1" 
+        aria-labelledby="promotionSelectionModalLabel" 
+        aria-modal="true" 
+        role="dialog">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="promotionSelectionModalLabel">Select Promotion</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="modalBody">
+            <div id="promotion-select-modal-body" class="d-flex flex-row gap-3">
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>

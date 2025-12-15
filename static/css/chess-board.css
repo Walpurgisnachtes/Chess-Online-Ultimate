@@ -92,7 +92,7 @@
 }
 
 .friendly-card .card-title {
-  font-size: 0.7rem;
+  font-size: 1rem;
 }
 
 .friendly-card-img-top {
@@ -178,12 +178,17 @@ html[data-bs-theme="dark"] .chessboard {
     --chessboard-size-rate: 0.7;
   }
 
+  .friendly-card .card-title {
+    font-size: 0.7rem;
+  }
+
   .friendly-card-img-top {
     height: 12vh;
   }
 
   .in-game-preview-card {
     left: 20%;
+    bottom: 180%;
     width: calc(var(--preview-card-width));
     min-height: calc(var(--preview-card-height));
   }

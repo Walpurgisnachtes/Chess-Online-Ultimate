@@ -34,6 +34,7 @@ class CardGenerator {
       const cardDiv = document.createElement("div");
       cardDiv.className = "card game-card friendly-card";
       cardDiv.dataset.cardType = data.type;
+      cardDiv.dataset.cardIdInHand = index;
       cardDiv.style.setProperty("--rot", `${rotation}deg`);
       cardDiv.style.zIndex = index + this.cardZIndexLevel;
 
@@ -41,7 +42,7 @@ class CardGenerator {
         <div class="card-cost-badge">${data.cost}</div>
         ${
           data.img
-            ? `<img src="${data.img}" class="friendly-card-img-top card-img-top" loading="lazy">`
+            ? `<img src="${data.img}" class="friendly-card-img-top card-img-top" loading="lazy" draggable="false">`
             : ""
         }
         <div class="card-body py-0">
@@ -58,7 +59,7 @@ class CardGenerator {
 
       const previewHTML = `
         <div id="previewCostBadge" class="card-cost-badge">${data.cost}</div>
-          <img id="previewImg" src="${data.img}" class="in-game-preview-card-img-top card-img-top">
+          <img id="previewImg" src="${data.img}" class="in-game-preview-card-img-top card-img-top" draggable="false">
           <div class="card-body">
             <h3 id="previewName" class="card-title">${data.name}</h3>
             <p id="previewDesc" class="card-text">${description}</p>
@@ -69,6 +70,7 @@ class CardGenerator {
 
       // ────── HOVER LOGIC (now super cheap) ──────
       cardDiv.addEventListener("mouseenter", () => {
+        previewEl.dataset.cardType = data.type;
         previewEl.innerHTML = this.#previewCache.get(index); // cached string → no new img requests
         previewEl.classList.add("show");
       });
@@ -76,6 +78,8 @@ class CardGenerator {
       cardDiv.addEventListener("mouseleave", () => {
         previewEl.classList.remove("show");
       });
+
+      this.makeCardDraggable(cardDiv);
 
       playerArea?.appendChild(cardDiv);
     });
@@ -102,6 +106,117 @@ class CardGenerator {
       cardDiv.style.zIndex = i + this.cardZIndexLevel;
       enemyArea.appendChild(cardDiv);
     }
+  }
+
+  makeCardDraggable(cardEl) {
+    const offsetParent = cardEl.offsetParent || document.body;
+    const boardEl = document.querySelector("#game-board");
+
+    const getParentRect = () => offsetParent.getBoundingClientRect();
+
+    const getCardPosition = () => {
+      const cardRect = cardEl.getBoundingClientRect();
+      const parentRect = getParentRect();
+      return {
+        left: cardRect.left - parentRect.left + offsetParent.scrollLeft,
+        top: cardRect.top - parentRect.top + offsetParent.scrollTop,
+      };
+    };
+
+    let origin = getCardPosition();
+    let originZIndex = "0";
+    let pointerStart = { x: 0, y: 0 };
+    let dragging = false;
+
+    const overlapWithBoard = () => {
+      const boardRect = boardEl.getBoundingClientRect();
+      const cardRect = cardEl.getBoundingClientRect();
+      return !(
+        cardRect.right < boardRect.left ||
+        cardRect.left > boardRect.right ||
+        cardRect.bottom < boardRect.top ||
+        cardRect.top > boardRect.bottom
+      );
+    };
+
+    const onPointerMove = (event) => {
+      if (!dragging) return;
+
+      // const dx = event.clientX - pointerStart.x;
+      // const dy = event.clientY - pointerStart.y;
+      // console.log(`
+      //   x: clientX: ${event.clientX} pageX: ${event.pageX} pointerStart.x: ${
+      //   pointerStart.x
+      // } dx: ${dx} finX:${origin.left + dx}
+      //   y: clientY: ${event.clientY} pageY: ${event.pageY} pointerStart.y: ${
+      //   pointerStart.y
+      // } dy: ${dy} finY: ${origin.top + dy}`);
+
+      // Hard code for my macBook
+      if (window.innerWidth < 1200) {
+        cardEl.style.left = `${event.clientX - 100}px`;
+        cardEl.style.top = `${event.clientY - window.innerHeight}px`;
+      } else {
+        cardEl.style.left = `${event.clientX - 250}px`;
+        cardEl.style.top = `${event.clientY - window.innerHeight + 200}px`;
+      }
+    };
+
+    const onPointerUp = (event) => {
+      if (!dragging) return;
+
+      dragging = false;
+      cardEl.releasePointerCapture(event.pointerId);
+      document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("pointerup", onPointerUp);
+      cardEl.style.cursor = "";
+
+      cardEl.style.left = ``;
+      cardEl.style.top = ``;
+      cardEl.style.transformOrigin = "";
+      cardEl.style.transform = "";
+      cardEl.style.zIndex = originZIndex;
+
+      if (overlapWithBoard()) {
+        window.dispatchEvent(
+          new CustomEvent("playCard", {
+            detail: {
+              cardIdInHand: cardEl.dataset.cardIdInHand,
+            },
+          })
+        );
+      } else {
+        // Snap back with a quick transition
+
+        const handleReset = () => {
+          cardEl.style.transition = "";
+          cardEl.removeEventListener("transitionend", handleReset);
+        };
+        cardEl.addEventListener("transitionend", handleReset);
+      }
+    };
+
+    cardEl.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      dragging = true;
+
+      origin = getCardPosition();
+      originZIndex = cardEl.style.zIndex;
+      pointerStart = { x: event.clientX, y: event.clientY };
+
+      cardEl.style.touchAction = "none";
+      cardEl.style.cursor = "grabbing";
+
+      cardEl.style.left = `${origin.left}px`;
+      cardEl.style.top = `${origin.top}px`;
+      cardEl.style.transformOrigin = "unset";
+      cardEl.style.transform = "none";
+      cardEl.style.zIndex = "200";
+
+      cardEl.setPointerCapture(event.pointerId);
+      document.addEventListener("pointermove", onPointerMove);
+      document.addEventListener("pointerup", onPointerUp);
+    });
   }
 
   /**

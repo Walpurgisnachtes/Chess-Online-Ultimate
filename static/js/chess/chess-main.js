@@ -19,7 +19,7 @@ class ChessLogicLocalController {
     this.game = new Chess();
     this.selectedSquare = null;
     this.myColor = null;
-    this.in_check = false;
+    this.is_moved = false;
     this.is_hand_hidden = false;
   }
 
@@ -68,9 +68,7 @@ class ChessLogicLocalController {
         await this.disconnect("Session expired. Please log in again.");
       }
 
-      // Valid move — proceed with animation and update
-      this.in_check = move.enemy_in_check || false;
-
+      this.is_moved = true;
       // Animate the move
       await BoardGenerationHelper.animatePieceMove(
         move.from,
@@ -80,7 +78,6 @@ class ChessLogicLocalController {
       );
 
       // Update internal game state and re-render board
-      this.game.load(data.fen); // assuming server still sends fen
       BoardGenerationHelper.render(this.game);
       this.updateTurnStatus();
       BoardGenerationHelper.clearHighlights();
@@ -105,6 +102,8 @@ class ChessLogicLocalController {
   startGame(data) {
     this.myColor = data.color;
 
+    BoardGenerationHelper.generatePromotionScreen(this.myColor);
+
     const waitingScreen = document.getElementById("waiting-screen");
     if (waitingScreen) {
       waitingScreen.style.opacity = "0";
@@ -128,6 +127,16 @@ class ChessLogicLocalController {
     document.addEventListener("keyup", (event) => {
       if (event.key === "c") this.changeHandVisibility();
     });
+
+    const turnSwitcher = document.getElementById("game-status");
+    turnSwitcher.addEventListener("click", async (e) => {
+      if (turnSwitcher.disabled) return;
+      await this.socket.emit("end_turn", {});
+    });
+
+    window.addEventListener("playCard", (e) => {
+      this.playCard(e.detail.cardIdInHand)
+    })
 
     this.game.load(
       data.fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -164,6 +173,10 @@ class ChessLogicLocalController {
       });
       this.is_hand_hidden = true;
     }
+  }
+
+  playCard(cardIdInHand) {
+    console.log(`I will play card ${cardIdInHand}`)
   }
 
   attachSquareClicks() {
@@ -210,13 +223,13 @@ class ChessLogicLocalController {
   }
 
   updateTurnStatus() {
-    if (!document.getElementById("turn-status")) return;
-    const turnText =
-      this.game.turn() === this.myColor[0] ? "Your turn" : "Opponent's turn";
-    const checkText = this.in_check
-      ? " <span class='text-danger fw-bold'>(CHECK!)</span>"
-      : "";
-    document.getElementById("turn-status").innerHTML = turnText + checkText;
+    const turnSwitcher = document.getElementById("game-status");
+    if (!turnSwitcher) return;
+    const turnPlayerStatus = turnSwitcher.querySelector("#turn-player-status");
+    const isMyTurn = this.game.turn() === this.myColor[0];
+    const turnText = isMyTurn ? "Your turn" : "Opponent's turn";
+    turnPlayerStatus.textContent = turnText;
+    turnSwitcher.disabled = !this.is_moved;
   }
 
   async disconnect(msg) {

@@ -1,13 +1,20 @@
+:root {
+  --in-game-button-z-index: 150;
+}
+
 #change-hand-visibility-btn {
   position: absolute;
   top: -25%;
   left: -60%;
+  z-index: var(--in-game-button-z-index);
 }
 
 .game-status {
   position: absolute;
-  top: 40%;
-  left: -61%;
+  width: 60%;
+  top: 110%;
+  left: -75%;
+  z-index: var(--in-game-button-z-index);
 }
 
 @media (max-height: 800px) {
@@ -16,8 +23,7 @@
   }
 
   .game-status {
-    position: absolute;
-    top: 30%;
-    left: -62%;
+    top: 80%;
+    left: -68%;
   }
 }

@@ -22,6 +22,9 @@ class ChessBoardGenerator {
       q: "queen",
       k: "king",
     };
+    this.promotion = null;
+    this._modalEl = null;
+    this.modal = null;
   }
 
   /**
@@ -52,6 +55,47 @@ class ChessBoardGenerator {
         board.appendChild(square);
       }
     }
+  }
+
+  generatePromotionScreen(colorSide) {
+    this._modalEl = document.getElementById("promotion-selection-modal");
+    this.modal = new bootstrap.Modal(this._modalEl);
+    const promotionModal = document.getElementById(
+      "promotion-select-modal-body"
+    );
+    const promotablePieces = ["knight", "bishop", "rook", "queen"];
+    _.forEach(promotablePieces, (typeName) => {
+      const btn = document.createElement("button");
+      btn.className = "card promotion-select-card btn";
+      var formattedTypeName = typeName.charAt(0).toUpperCase() + typeName.slice(1);
+      btn.innerHTML = `
+        <img src="/static/img/piece/${typeName}_${colorSide}.png" class="card-img-top" loading="lazy" draggable="false">
+        <div class="card-body py-0">
+          <h6 class="card-title h-100 d-flex justify-content-center align-items-center text-center">
+            ${formattedTypeName}
+          </h6>
+        </div>`;
+      btn.addEventListener("click", () => {
+        this.promotion = typeName;
+        this.hide_promotion_screen();
+      });
+      promotionModal.appendChild(btn);
+    });
+  }
+
+  show_promotion_screen() {
+    this._modalEl.setAttribute("aria-modal", "true");
+    this.modal.show();
+  }
+
+  removeFocus() {
+    const currentActiveElement = document.activeElement;
+    currentActiveElement.blur();
+  }
+
+  hide_promotion_screen() {
+    this.removeFocus();
+    this.modal.hide();
   }
 
   /**
