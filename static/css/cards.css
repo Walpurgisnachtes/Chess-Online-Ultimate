@@ -72,7 +72,7 @@
 
 /* Friendly Card Styling */
 .friendly-card {
-  bottom: 100px;
+  bottom: 10px;
 
   /* The Fan Physics */
   transform-origin: 50% var(--fan-pivot-y);
@@ -98,7 +98,7 @@
 
 /* Enemy Card Styling */
 .enemy-card {
-  top: 60px; /* Base distance from top edge */
+  top: 10px; /* Base distance from top edge */
 
   /* Inverted Fan Physics */
   transform-origin: 50% var(--enemy-pivot-y);
