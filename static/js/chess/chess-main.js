@@ -1,13 +1,19 @@
 // static/js/chess-main.js
 
 async function waitForLogin() {
+  let i = 0;
   while (true) {
+    if (i >= 5) {
+      await modal.messageOnly("You are disconnected!");
+      window.location.href = "/login";
+    }
     const res = await fetch("/api/session");
     const data = await res.json();
     if (data.logged_in) {
       return data.username;
     }
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 200 * 2 ** i));
+    i += 1;
   }
 }
 
