@@ -121,8 +121,20 @@ class CardGenerator {
     // Stores the initial offset (x, y) from the mouse/touch point
     // to the top-left corner of the card when dragging starts.
     let offsetX, offsetY;
+    const boardEl = document.querySelector("#chessboard-core");
     // Stores the original z-index of the card before dragging.
     let originZ = cardEl.style.zIndex || this.cardZIndexLevel;
+
+    const overlapWithBoard = () => {
+      const boardRect = boardEl.getBoundingClientRect();
+      const cardRect = cardEl.getBoundingClientRect();
+      return !(
+        cardRect.right < boardRect.left ||
+        cardRect.left > boardRect.right ||
+        cardRect.bottom < boardRect.top ||
+        cardRect.top > boardRect.bottom
+      );
+    };
 
     // --- Event Listeners and Setup ---
 
@@ -203,6 +215,15 @@ class CardGenerator {
     // 5. Drag End Handler
     const onDragEnd = () => {
       // Reset everything as per requirements:
+      if (overlapWithBoard()) {
+        window.dispatchEvent(
+          new CustomEvent("playCard", {
+            detail: {
+              cardIdInHand: cardEl.dataset.cardIdInHand,
+            },
+          })
+        );
+      }
       cardEl.style.left = ``;
       cardEl.style.top = ``;
       cardEl.style.zIndex = originZ;
