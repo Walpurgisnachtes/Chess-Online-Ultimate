@@ -89,9 +89,6 @@ class ChessBoardGenerator {
       // Remove selection highlight
       this.clearHighlights("selected");
       this._selectedSquare = null;
-
-      // Dispatch the move event
-      this.dispatchMoveEvent(fromSquare, toSquare);
     } else if (hasPiece) {
       // Case 2: No piece selected, this click is the source ('from')
       this._selectedSquare = toSquare;
@@ -101,31 +98,6 @@ class ChessBoardGenerator {
       this.highlightSquare(row, col, "selected");
     }
     // Case 3: No piece selected, and clicked on an empty square -> Do nothing
-  }
-
-  /**
-   * NEW: Dispatches the global custom event for a piece move.
-   * @param {string} from - The source square (algebraic)
-   * @param {string} to - The destination square (algebraic)
-   */
-  dispatchMoveEvent(from, to) {
-    const detail = {
-      from: from,
-      to: to,
-      // Promotion is handled externally, but we include it if available
-      promotion: this.promotion,
-    };
-
-    // Reset promotion state immediately after dispatch
-    this.promotion = null;
-
-    // Dispatch the global custom event
-    const moveEvent = new CustomEvent("move_piece", { detail });
-    document.dispatchEvent(moveEvent);
-
-    console.log(
-      `Dispatched move_piece event: ${from}-${to}, promotion: ${detail.promotion}`
-    );
   }
 
   generatePromotionScreen(colorSide) {
@@ -245,6 +217,7 @@ class ChessBoardGenerator {
 
   /**
    * Animate a piece move (used in move_made)
+   * !!! Forbidden !!!
    */
   animatePieceMove(from, to, promotion = null, pieceColor = null) {
     const fromCoords = this.algebraicToCoords(from);

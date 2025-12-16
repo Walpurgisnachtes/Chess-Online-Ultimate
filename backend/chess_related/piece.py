@@ -17,6 +17,7 @@ Features:
 from __future__ import annotations
 
 from typing import List, Optional
+from uuid import UUID
 
 from chess_related.status_effect import StatusEffect
 from misc.enums import PieceName, StatusCountdownMethod
@@ -47,7 +48,8 @@ class BasePiece:
         spawning_point: str = "",
         is_capturable: bool = True,
         is_lose_on_capture: bool = False,
-        is_removable: bool = True
+        is_removable: bool = True,
+        uuid: UUID = UUID(int=0),
     ) -> None:
         self._name = piece_name.value
         self._move_rule = [p.value for p in move_rule]
@@ -57,6 +59,7 @@ class BasePiece:
         self.is_capturable = is_capturable
         self.is_lose_on_capture = is_lose_on_capture
         self.is_removable = is_removable
+        self.uuid = uuid
 
     @property
     def name(self) -> str:

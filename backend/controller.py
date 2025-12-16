@@ -18,6 +18,8 @@ from chess_related.chess_utils import *
 
 from controller_related.event_controller import EventHandler
 
+from misc.enums import StatusCountdownMethod, PieceName
+
 from player_related.player import Player
 
 class GameController:
@@ -195,7 +197,7 @@ class GameController:
                 if piece_type_filter and piece.__class__.__name__ not in piece_type_filter:
                     continue
 
-                square = Board.array_index_to_square_notation(i, j)
+                square = self.board.array_index_to_square_notation(i, j)
                 result_squares.append(square)
 
         min_required = predicate.get("min")
@@ -314,10 +316,182 @@ class GameController:
         card_obj = card_class(controller=self)
         card_obj.exec()
     
-    def move_piece(self, move_object: Dict[str, str]) -> bool:
+    def move_piece(self, move_object: Dict[str, str]) -> Dict[str, bool]:
         from_where = move_object.get("from", "a8")
         to_where = move_object.get("to", "a1")
-        promotion = move_object.get("promotion", "NonePiece")
+        promotion = move_object.get("promotion", None)
+        result = {
+            'success': False,
+            'en_passant': '', 
+            'win': False
+        }
+
+        # 1. Get the piece from the board
+        print(self.board)
+        piece = self.board.get_piece_at_square(from_where)
+        if not piece or piece.color != self.current_player:
+            print(f"Piece: {piece.__class__.__name__}, Color: {piece.color}")
+            print("not passing piece color check")
+            return result
+
+        # 2. Check if move is possible under current moving rules
+        if not self.is_valid_move(piece, from_where, to_where):
+            print("not passing piece valid move check")
+            return result
+
+        # 3. Check for capture
+        target_piece = self.board.get_piece_at_square(to_where)
+        captured = False
+        if target_piece:
+            if target_piece.color == self.current_player or not target_piece.is_capturable:
+                print("not passing piece capturable check")
+                return result
+            captured = True
+
+        # 4. Success — prepare result
+        result["success"] = True
+
+        # 5. If captured and is_lose_on_capture, add win
+        if captured and target_piece.is_lose_on_capture:
+            result['win'] = True
+
+        # Handle en passant
+        en_passant_square = None
+        if piece._name == PieceName.PAWN:
+            en_passant_square = self.get_en_passant_square(from_where, to_where, piece.color)
+            result['en_passant'] = en_passant_square    
+        
+        # Handle promotion if applicable
+        if piece._name == PieceName.PAWN and self.is_promotion_rank(to_where, piece.color) and promotion != "none":
+            self.board.move_piece(from_where, to_where, en_passant_square, promotion=promotion if promotion != "none" else None)
+
+        self.board.move_piece(from_where, to_where, en_passant_square)
+
+        return result
+
+    def is_valid_move(self, piece: BasePiece, from_square: str, to_square: str) -> bool:
+        """
+        Validate if the move is legal based on the piece's current move_rule list.
+        Does NOT hardcode rules — dynamically checks each rule in the list.
+        """
+        from_row, from_col = self.board.square_notation_to_array_index(from_square)
+        to_row, to_col = self.board.square_notation_to_array_index(to_square)
+
+        for rule in piece._move_rule:
+            if self.check_move_by_rule(rule, from_row, from_col, to_row, to_col, piece.color):
+                return True
+        return False
+    
+    def get_en_passant_square(self, from_square: str, to_square: str, color: str) -> Optional[str]:
+        from_row, from_col = self.board.square_notation_to_array_index(from_square)
+        to_row, to_col = self.board.square_notation_to_array_index(to_square)
+        direction = -1 if color == self.PLAYER_COLOR_WHITE else 1
+        
+        dr = to_row - from_row
+        dc = to_col - from_col
+        
+        if abs(dc) == 1 and dr == direction:
+            en_passant_col = to_col - direction
+            en_passant_square = self.board.array_index_to_square_notation(to_row, en_passant_col)
+            en_passant_piece = self.board.get_piece_at_square(en_passant_square)
+            if en_passant_piece.has_status("en_passant"):
+                return en_passant_square
+        
+        return None
+
+    def check_move_by_rule(self, rule: str, fr: int, fc: int, tr: int, tc: int, color: str) -> bool:
+        """
+        Dynamic move validation per rule type.
+        Checks path clear for unlimited moves.
+        """
+        dr = tr - fr
+        dc = tc - fc
+        
+        print(f"""
+Checking rule \"{color} {rule}\" 
+[row] from {fr} to {tr} dr {dr}
+[col] from {fc} to {tc} dr {dc}
+""")
+
+        if rule == PieceName.BISHOP:
+            if abs(dr) != abs(dc) or dr == 0: return False
+            return self.is_path_clear(fr, fc, tr, tc)
+
+        elif rule == PieceName.ROOK:
+            if (dr != 0 and dc != 0) or (dr == 0 and dc == 0): return False
+            return self.is_path_clear(fr, fc, tr, tc)
+
+        elif rule == PieceName.KNIGHT:
+            return (abs(dr) == 2 and abs(dc) == 1) or (abs(dr) == 1 and abs(dc) == 2)
+
+        elif rule == PieceName.KING:
+            return max(abs(dr), abs(dc)) == 1
+
+        elif rule == PieceName.PAWN:
+            direction = -1 if color == self.PLAYER_COLOR_WHITE else 1
+            if dc == 0:  # forward pushes
+                target_piece = self.board.get_piece_at_square(
+                    self.board.array_index_to_square_notation(tr, tc)
+                )
+                target_mid_piece = self.board.get_piece_at_square(
+                    self.board.array_index_to_square_notation(fr + direction, fc)
+                )
+                if (dr == direction and isinstance(target_piece, NonePiece)):
+                    return True
+                if (
+                    dr == 2 * direction
+                    and fr == (6 if color == self.PLAYER_COLOR_WHITE else 1)
+                    and isinstance(target_mid_piece, NonePiece)
+                    and isinstance(target_piece, NonePiece)
+                ):
+                    return True
+
+            elif abs(dc) == 1 and dr == direction:
+                target_square = self.board.array_index_to_square_notation(tr, tc)
+                target_piece = self.board.get_piece_at_square(target_square)
+                if target_piece:
+                    return True
+                else:
+                    target_en_passant_square = self.board.array_index_to_square_notation(fr, tc)
+                    target_en_passant_piece = self.board.get_piece_at_square(target_en_passant_square)
+                    if target_en_passant_piece.has_status("en_passant"):
+                        return True
+
+            return False
+
+        elif rule == PieceName.REDUCED_BISHOP:
+            return abs(dr) == abs(dc) == 1  # 1 square diagonal
+
+        elif rule == PieceName.REDUCED_ROOK:
+            return (abs(dr) == 1 and dc == 0) or (abs(dc) == 1 and dr == 0)  # 1 square orthogonal
+
+        # Add more rules as needed (e.g., "jinetes" modifies piece.move_rule dynamically)
+
+        return False  # Unknown rule
+
+    def is_path_clear(self, fr: int, fc: int, tr: int, tc: int) -> bool:
+        """
+        Check if path between squares is empty (for sliding pieces)
+        """
+        dr = (tr - fr) // max(1, abs(tr - fr))  # Step direction row
+        dc = (tc - fc) // max(1, abs(tc - fc))  # Step direction col
+
+        cr, cc = fr + dr, fc + dc
+
+        print("Checking if path clear...")
+        
+        while (cr, cc) != (tr, tc):
+            target_piece = self.board.get_piece_at_square(self.board.array_index_to_square_notation(cr, cc))
+            if not isinstance(target_piece, NonePiece):
+                print(f"Path is not clear at {self.board.array_index_to_square_notation(cr, cc)} with Piece {target_piece}")
+                return False
+            cr += dr
+            cc += dc
+        return True
+
+    def is_promotion_rank(self, square: str, color: str) -> bool:
+        rank = int(square[1])
+        return (color == self.PLAYER_COLOR_WHITE and rank == 8) or (color == self.PLAYER_COLOR_BLACK and rank == 1)
     
     def game_start(self):
         for player in self.players.values():
@@ -329,6 +503,7 @@ class GameController:
             self.card_event_handler.dispatch_event("card_drawn", data={
                 "card_id": [card.id for card in drawn_cards],
             })
+        self.board.setup_standard_position()
     
     def remove_piece(self, piece_pos_square):
         self.board.remove_piece(piece_pos_square)

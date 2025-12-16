@@ -49,7 +49,7 @@ class Card10001:
             return
 
         piece_pos_square = selected["piece"]
-        target_piece = self.controller.board.find_by_square(piece_pos_square)
+        target_piece = self.controller.board.get_piece_at_square(piece_pos_square)
 
         if not target_piece:
             print("[Card 10001] Selected piece no longer exists → effect fizzles")

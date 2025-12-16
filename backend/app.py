@@ -647,28 +647,50 @@ def on_make_move(data):
         emit("error", {"msg": "It's not your turn!"}, to=sid)
         return
     
+    print("Received move request!", move_data)
+    
     promotion = move_data["promotion"]
-    success = controller.try_move_piece({
+    move_result = controller.move_piece({
             'from': move_data['from'],
             'to': move_data['to'],
             'promotion': promotion,
     })
+    success = move_result["success"]
+    en_passant = move_result["en_passant"]
+    win = move_result["win"]
     
-    if success :
+    if win:
         emit('move_made', {
             'move': {
                 'from': move_data['from'],
                 'to': move_data['to'],
                 'promotion': promotion,
+                'en_passant': en_passant,
                 'success': success
             }
         }, room=room)
-    else :
-        emit('msg', {
+        emit('game_over', {
+            'winner': current_player_color,
+            'msg': f'{current_player_obj.username} wins!'
+        }, room=room)
+        del games[room]
+    elif success:
+        emit('move_made', {
             'move': {
                 'from': move_data['from'],
                 'to': move_data['to'],
                 'promotion': promotion,
+                'en_passant': en_passant,
+                'success': success
+            }
+        }, room=room)
+    else :
+        emit('move_fails', {
+            'move': {
+                'from': move_data['from'],
+                'to': move_data['to'],
+                'promotion': promotion,
+                'en_passant': en_passant,
                 'success': success
             }
         }, to=sid)

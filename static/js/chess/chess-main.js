@@ -34,13 +34,6 @@ class ChessLogicLocalController {
 
     BoardGenerationHelper.generateChessBoard();
 
-    document.addEventListener("move_piece", async (event) => {
-      const { from, to, promotion } = event.detail;
-
-      console.log(`Move requested: ${from} to ${to} (Promotion: ${promotion})`);
-      //await this.socket.emit("make_move", { from, to, promotion });
-    });
-
     this.socket = io();
     this.bindSocketIOEvents();
 
@@ -73,7 +66,21 @@ class ChessLogicLocalController {
       this.startGame(data);
     });
 
+    this.socket.on("move_fails", async (data) => {
+      console.log("move fails?", data);
+    });
+
     this.socket.on("move_made", async (data) => {
+      `
+      'move': {
+        'from': move_data['from'],
+        'to': move_data['to'],
+        'promotion': promotion,
+        'en_passant': en_passant,
+        'success': success
+      }
+      `;
+
       const move = data.move;
 
       // Critical: Check if the move was successful on the server
@@ -81,16 +88,25 @@ class ChessLogicLocalController {
         await this.disconnect("Session expired. Please log in again.");
       }
 
+      const { from, to, promotion, en_passant, success } = move;
       this.is_moved = true;
       // Animate the move
-      await BoardGenerationHelper.animatePieceMove(
-        move.from,
-        move.to,
-        move.promotion || null,
-        this.game.turn() === "w" ? "w" : "b" // color of the piece that just moved
-      );
+      // await BoardGenerationHelper.animatePieceMove(
+      //   move.from,
+      //   move.to,
+      //   move.promotion || null,
+      //   this.game.turn() === "w" ? "w" : "b" // color of the piece that just moved
+      // );
 
       // Update internal game state and re-render board
+      this.game.remove(to);
+      if (en_passant) {
+        this.game.remove(en_passant);
+      }
+      const fromPiece = this.game.get(from)
+      this.game.put(fromPiece, to)
+      this.game.remove(from)
+      
       BoardGenerationHelper.render(this.game);
       this.updateTurnStatus();
       BoardGenerationHelper.clearHighlights();
@@ -198,7 +214,8 @@ class ChessLogicLocalController {
     });
   }
 
-  handleSquareClick(event) {
+  // TODO: Promotion Logic
+  async handleSquareClick(event) {
     const square = event.currentTarget;
     const row = parseInt(square.dataset.row);
     const col = parseInt(square.dataset.col);
@@ -219,7 +236,11 @@ class ChessLogicLocalController {
         }
       }
 
-      this.socket.emit("make_move", {
+      console.log(
+        `Requested Move: from: ${this.selectedSquare} to: ${squareName} promotion: ${promotion}`
+      );
+
+      await this.socket.emit("make_move", {
         move: { from: this.selectedSquare, to: squareName, promotion },
       });
 
