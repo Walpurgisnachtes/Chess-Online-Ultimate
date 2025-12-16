@@ -28,6 +28,13 @@ class ChessLogicLocalController {
 
     BoardGenerationHelper.generateChessBoard();
 
+    document.addEventListener("move_piece", async (event) => {
+      const { from, to, promotion } = event.detail;
+
+      console.log(`Move requested: ${from} to ${to} (Promotion: ${promotion})`);
+      //await this.socket.emit("make_move", { from, to, promotion });
+    });
+
     this.socket = io();
     this.bindSocketIOEvents();
 
@@ -135,8 +142,8 @@ class ChessLogicLocalController {
     });
 
     window.addEventListener("playCard", (e) => {
-      this.playCard(e.detail.cardIdInHand)
-    })
+      this.playCard(e.detail.cardIdInHand);
+    });
 
     this.game.load(
       data.fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
@@ -176,7 +183,7 @@ class ChessLogicLocalController {
   }
 
   playCard(cardIdInHand) {
-    console.log(`I will play card ${cardIdInHand}`)
+    console.log(`I will play card ${cardIdInHand}`);
   }
 
   attachSquareClicks() {

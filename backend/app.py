@@ -639,13 +639,6 @@ def on_make_move(data):
     game = games[room]
     controller: GameController = game.get("controller")
     
-    for col, s in game['players'].items():
-        if s == sid:
-            color = col
-            break
-    else:
-        return
-    
     # Find which player is trying to play
     current_player_color = controller.current_player
     current_player_obj = game['players'].get(current_player_color)
@@ -661,14 +654,24 @@ def on_make_move(data):
             'promotion': promotion,
     })
     
-    emit('move_made', {
-        'move': {
-            'from': move_data['from'],
-            'to': move_data['to'],
-            'promotion': promotion,
-            'success': success
-        }
-    }, room=room)
+    if success :
+        emit('move_made', {
+            'move': {
+                'from': move_data['from'],
+                'to': move_data['to'],
+                'promotion': promotion,
+                'success': success
+            }
+        }, room=room)
+    else :
+        emit('msg', {
+            'move': {
+                'from': move_data['from'],
+                'to': move_data['to'],
+                'promotion': promotion,
+                'success': success
+            }
+        }, to=sid)
 
 @socketio.on('resign')
 def on_resign(data):
