@@ -87,7 +87,7 @@
 /* Subtle highlight on hover (Optional: shows which card is active without moving it) */
 .friendly-card:hover {
   filter: brightness(1.1);
-  bottom: 120px;
+  bottom: 30px;
   /* transform-origin: 100% var(--fan-pivot-y); */
 }
 
