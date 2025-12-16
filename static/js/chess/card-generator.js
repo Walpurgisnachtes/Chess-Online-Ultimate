@@ -108,115 +108,117 @@ class CardGenerator {
     }
   }
 
+  /**
+   * Makes a card element draggable across all screen sizes.
+   *
+   * It uses touch and mouse events and calculates movement based on the
+   * viewport coordinates (clientX/clientY) and the element's current
+   * position/size.
+   *
+   * @param {HTMLElement} cardEl The card element to make draggable (assumed position: absolute).
+   */
   makeCardDraggable(cardEl) {
-    const offsetParent = cardEl.offsetParent || document.body;
-    const boardEl = document.querySelector("#game-board");
+    // Stores the initial offset (x, y) from the mouse/touch point
+    // to the top-left corner of the card when dragging starts.
+    let offsetX, offsetY;
+    // Stores the original z-index of the card before dragging.
+    let originZ = cardEl.style.zIndex || this.cardZIndexLevel;
 
-    const getParentRect = () => offsetParent.getBoundingClientRect();
+    // --- Event Listeners and Setup ---
 
-    const getCardPosition = () => {
-      const cardRect = cardEl.getBoundingClientRect();
-      const parentRect = getParentRect();
-      return {
-        left: cardRect.left - parentRect.left + offsetParent.scrollLeft,
-        top: cardRect.top - parentRect.top + offsetParent.scrollTop,
-      };
+    // 1. Unified Event Listener for both MouseDown and TouchStart
+    // This function runs when the drag operation officially begins.
+    const onDragStart = (e) => {
+      // Prevent default behavior to avoid issues like image dragging or text selection
+      e.preventDefault();
+
+      // Get the coordinate source (handles both MouseEvent and TouchEvent)
+      const clientX = e.clientX || e.touches[0].clientX;
+      const clientY = e.clientY || e.touches[0].clientY;
+
+      // Ensure the element has its initial position properties set
+      // if they are not already. We will use getBoundingClientRect()
+      // for the most accurate current position relative to the viewport.
+      const rect = cardEl.getBoundingClientRect();
+
+      // 🚨 IMPORTANT: Calculate the offset from the click point to the card's top-left.
+      // This is crucial to prevent the card from "jumping" when the drag starts.
+      offsetX = clientX - rect.left;
+      offsetY = clientY - rect.top;
+
+      // 2. Start the Drag State
+
+      // Apply dragging styles as per requirements:
+      cardEl.style.zIndex = this.cardZIndexLevel * 2;
+      cardEl.style.transformOrigin = "none";
+
+      // 🚨 CRITICAL CONVERSION:
+      // If the card was positioned using `transform` before the drag (e.g., for centering),
+      // we must calculate its absolute `left`/`top` equivalent *before* setting the drag state.
+      // We use its current *viewport* position (rect.left/top) and subtract
+      // the parent's position to get the final px values.
+
+      // Get the parent's bounding box for accurate offset calculation.
+      const parentRect = cardEl.parentElement.getBoundingClientRect();
+
+      // Set initial left/top based on its current visual position.
+      // This effectively "locks" its current position into the `left`/`top` properties.
+      const newLeft = rect.left - parentRect.left;
+      const newTop = rect.top - parentRect.top;
+
+      cardEl.style.left = `${newLeft}px`;
+      cardEl.style.top = `${newTop}px`;
+
+      // Clear any potentially conflicting transform applied before the drag
+      cardEl.style.transform = "unset";
+
+      // 3. Attach Move and End Handlers to the document/window
+      // Attaching to the window ensures the drag continues even if the cursor
+      // leaves the card element itself (e.g., fast movement).
+      window.addEventListener("mousemove", onDragMove, { passive: true });
+      window.addEventListener("touchmove", onDragMove, { passive: false }); // Needs to be non-passive for e.preventDefault()
+      window.addEventListener("mouseup", onDragEnd);
+      window.addEventListener("touchend", onDragEnd);
     };
 
-    let origin = getCardPosition();
-    let originZIndex = "0";
-    let pointerStart = { x: 0, y: 0 };
-    let dragging = false;
+    // 4. Drag Move Handler
+    const onDragMove = (e) => {
+      // Get the coordinate source
+      const clientX = e.clientX || e.touches[0].clientX;
+      const clientY = e.clientY || e.touches[0].clientY;
 
-    const overlapWithBoard = () => {
-      const boardRect = boardEl.getBoundingClientRect();
-      const cardRect = cardEl.getBoundingClientRect();
-      return !(
-        cardRect.right < boardRect.left ||
-        cardRect.left > boardRect.right ||
-        cardRect.bottom < boardRect.top ||
-        cardRect.top > boardRect.bottom
-      );
+      // Get the parent's bounding box for accurate relative positioning
+      const parentRect = cardEl.parentElement.getBoundingClientRect();
+
+      // Calculate the new position relative to the parent, compensating for the
+      // initial offset (offsetX/offsetY).
+      const newLeft = clientX - parentRect.left - offsetX;
+      const newTop = clientY - parentRect.top - offsetY;
+
+      // Apply movement as per requirements:
+      cardEl.style.left = `${newLeft}px`;
+      cardEl.style.top = `${newTop}px`;
     };
 
-    const onPointerMove = (event) => {
-      if (!dragging) return;
-
-      // const dx = event.clientX - pointerStart.x;
-      // const dy = event.clientY - pointerStart.y;
-      // console.log(`
-      //   x: clientX: ${event.clientX} pageX: ${event.pageX} pointerStart.x: ${
-      //   pointerStart.x
-      // } dx: ${dx} finX:${origin.left + dx}
-      //   y: clientY: ${event.clientY} pageY: ${event.pageY} pointerStart.y: ${
-      //   pointerStart.y
-      // } dy: ${dy} finY: ${origin.top + dy}`);
-
-      // Hard code for my macBook
-      if (window.innerWidth < 1200) {
-        cardEl.style.left = `${event.clientX - 100}px`;
-        cardEl.style.top = `${event.clientY - window.innerHeight}px`;
-      } else {
-        cardEl.style.left = `${event.clientX - 250}px`;
-        cardEl.style.top = `${event.clientY - window.innerHeight + 200}px`;
-      }
-    };
-
-    const onPointerUp = (event) => {
-      if (!dragging) return;
-
-      dragging = false;
-      cardEl.releasePointerCapture(event.pointerId);
-      document.removeEventListener("pointermove", onPointerMove);
-      document.removeEventListener("pointerup", onPointerUp);
-      cardEl.style.cursor = "";
-
+    // 5. Drag End Handler
+    const onDragEnd = () => {
+      // Reset everything as per requirements:
       cardEl.style.left = ``;
       cardEl.style.top = ``;
+      cardEl.style.zIndex = originZ;
       cardEl.style.transformOrigin = "";
-      cardEl.style.transform = "";
-      cardEl.style.zIndex = originZIndex;
+      cardEl.style.transform = ""; // Resetting transform is standard practice
 
-      if (overlapWithBoard()) {
-        window.dispatchEvent(
-          new CustomEvent("playCard", {
-            detail: {
-              cardIdInHand: cardEl.dataset.cardIdInHand,
-            },
-          })
-        );
-      } else {
-        // Snap back with a quick transition
-
-        const handleReset = () => {
-          cardEl.style.transition = "";
-          cardEl.removeEventListener("transitionend", handleReset);
-        };
-        cardEl.addEventListener("transitionend", handleReset);
-      }
+      // Remove the move and end handlers from the window
+      window.removeEventListener("mousemove", onDragMove);
+      window.removeEventListener("touchmove", onDragMove);
+      window.removeEventListener("mouseup", onDragEnd);
+      window.removeEventListener("touchend", onDragEnd);
     };
 
-    cardEl.addEventListener("pointerdown", (event) => {
-      event.preventDefault();
-      dragging = true;
-
-      origin = getCardPosition();
-      originZIndex = cardEl.style.zIndex;
-      pointerStart = { x: event.clientX, y: event.clientY };
-
-      cardEl.style.touchAction = "none";
-      cardEl.style.cursor = "grabbing";
-
-      cardEl.style.left = `${origin.left}px`;
-      cardEl.style.top = `${origin.top}px`;
-      cardEl.style.transformOrigin = "unset";
-      cardEl.style.transform = "none";
-      cardEl.style.zIndex = "200";
-
-      cardEl.setPointerCapture(event.pointerId);
-      document.addEventListener("pointermove", onPointerMove);
-      document.addEventListener("pointerup", onPointerUp);
-    });
+    // --- Initial Event Listener Assignment ---
+    cardEl.addEventListener("mousedown", onDragStart);
+    cardEl.addEventListener("touchstart", onDragStart, { passive: false });
   }
 
   /**
