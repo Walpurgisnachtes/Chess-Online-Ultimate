@@ -27,6 +27,11 @@ class ChessLogicLocalController {
     this.myColor = null;
     this.is_moved = false;
     this.is_hand_hidden = false;
+
+    this.isChoosingPiece = false;
+    this.chosenPieces = [];
+    this.minChosenPiece = 0;
+    this.maxChosenPiece = 0;
   }
 
   async init() {
@@ -103,15 +108,49 @@ class ChessLogicLocalController {
       if (en_passant) {
         this.game.remove(en_passant);
       }
-      const fromPiece = this.game.get(from)
-      this.game.put(fromPiece, to)
-      this.game.remove(from)
-      
+      const fromPiece = this.game.get(from);
+      this.game.put(fromPiece, to);
+      this.game.remove(from);
+
       BoardGenerationHelper.render(this.game);
       this.updateTurnStatus();
       BoardGenerationHelper.clearHighlights();
 
       this.selectedSquare = null; // reset selection
+    });
+
+    this.socket.on("remove_piece", async (data) => {
+      const squares = data.position;
+      _.forEach(squares, (sq) => {
+        this.game.remove(sq);
+      });
+
+      BoardGenerationHelper.render(this.game);
+      BoardGenerationHelper.clearHighlights();
+    });
+
+    this.socket.on("open_selector", async (data) => {
+      `
+      {
+        "select_type": data["select_type"],
+        "select_from_item": data["select_from_item"],
+        "min": data["min"],
+        "max": data["max"],
+        "current_player": data["current_player"]
+      }
+      `;
+      this.resetChosenPieces();
+
+      this.changeHandVisibility("hidden");
+
+      if (data.select_type == "card") {
+      } else if (data.select_type == "piece") {
+        this.isChoosingPiece = true;
+        this.chosenPieces = [];
+        this.minChosenPiece = _.toInteger(data.min);
+        this.maxChosenPiece = _.toInteger(data.max);
+        BoardGenerationHelper.show_select_piece_screen(data.select_from_item);
+      }
     });
 
     this.socket.on("game_over", async (data) => {
@@ -163,6 +202,25 @@ class ChessLogicLocalController {
       await this.socket.emit("end_turn", {});
     });
 
+    const choosePieceConfirmBtn = document.getElementById(
+      "submit-selected-piece-btn"
+    );
+    choosePieceConfirmBtn.addEventListener("click", async () => {
+      const chosenPieceLength = this.chosenPieces.length;
+      if (
+        this.isChoosingPiece &&
+        chosenPieceLength >= this.minChosenPiece &&
+        chosenPieceLength <= this.maxChosenPiece
+      ) {
+        await this.socket.emit("chosen_by_selector", {
+          selected: this.chosenPieces,
+        });
+        this.changeHandVisibility("show");
+        this.resetChosenPieces();
+        BoardGenerationHelper.hide_select_piece_screen();
+      }
+    });
+
     window.addEventListener("playCard", (e) => {
       this.playCard(e.detail.cardIdInHand);
     });
@@ -188,24 +246,49 @@ class ChessLogicLocalController {
     console.log("joined");
   }
 
-  changeHandVisibility() {
-    if (this.is_hand_hidden) {
-      const handWrappers = document.querySelectorAll(".hand-area-wrapper");
-      _.forEach(handWrappers, (e) => {
-        e.classList.remove("hidden");
-      });
-      this.is_hand_hidden = false;
-    } else {
+  changeHandVisibility(status = "toggle") {
+    const hideHand = () => {
       const handWrappers = document.querySelectorAll(".hand-area-wrapper");
       _.forEach(handWrappers, (e) => {
         e.classList.add("hidden");
       });
       this.is_hand_hidden = true;
+    };
+
+    const showHand = () => {
+      const handWrappers = document.querySelectorAll(".hand-area-wrapper");
+      _.forEach(handWrappers, (e) => {
+        e.classList.remove("hidden");
+      });
+      this.is_hand_hidden = false;
+    };
+
+    switch (status) {
+      case "toggle":
+        this.is_hand_hidden ? showHand() : hideHand();
+        break;
+      case "hidden":
+        hideHand();
+        break;
+      case "show":
+        showHand();
+      default:
+        break;
     }
+  }
+
+  resetChosenPieces() {
+    this.isChoosingPiece = false;
+    this.chosenPieces = [];
+    this.minChosenPiece = 0;
+    this.maxChosenPiece = 0;
   }
 
   playCard(cardIdInHand) {
     console.log(`I will play card ${cardIdInHand}`);
+    this.socket.emit("played_card", {
+      played_card_in_hand_index: cardIdInHand,
+    });
   }
 
   attachSquareClicks() {
@@ -219,11 +302,25 @@ class ChessLogicLocalController {
     const square = event.currentTarget;
     const row = parseInt(square.dataset.row);
     const col = parseInt(square.dataset.col);
-    const squareName = String.fromCharCode(97 + col) + (8 - row);
+    const squareName = BoardGenerationHelper.coordsToAlgebraic(row, col);
 
-    if (this.game.turn() !== this.myColor[0]) return;
+    if (this.game.turn() !== this.myColor[0] && !this.isChoosingPiece) return;
 
-    if (this.selectedSquare) {
+    if (this.isChoosingPiece) {
+      if (this.game.get(squareName)) {
+        if (_.includes(this.chosenPieces, squareName)) {
+          _.pull(this.chosenPieces, squareName);
+        } else if (this.chosenPieces.length < this.maxChosenPiece) {
+          this.chosenPieces.push(squareName);
+        }
+        BoardGenerationHelper.clearHighlights();
+        _.forEach(this.chosenPieces, (squareNameChosen) => {
+          const { row, col } =
+            BoardGenerationHelper.algebraicToCoords(squareNameChosen);
+          BoardGenerationHelper.highlightSquare(row, col);
+        });
+      }
+    } else if (this.selectedSquare) {
       let promotion = null;
       const piece = this.game.get(this.selectedSquare);
       if (piece?.type === "p") {

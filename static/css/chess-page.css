@@ -17,6 +17,38 @@
   z-index: var(--in-game-button-z-index);
 }
 
+#select-piece-screen {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  top: 0%;
+  right: 0%;
+
+  opacity: 0.7;
+  z-index: 800;
+
+  overflow: hidden;
+  background-color: var(--bs-gray);
+  transition: opacity 0.2s ease-in;
+}
+
+#select-piece-screen.opacity-hidden {
+  opacity: 0;
+  z-index: -800;
+}
+
+#submit-selected-piece-btn {
+  position: absolute;
+  top: 80%;
+  left: 46%;
+  width: 8vw;
+  height: 4vh;
+}
+
+.select-screen-choosable {
+  z-index: 801;
+}
+
 @media (max-height: 800px) {
   #change-hand-visibility-btn {
     top: 0%;

@@ -132,6 +132,31 @@ class ChessBoardGenerator {
     this.modal.show();
   }
 
+  show_select_piece_screen(squares) {
+    _.forEach(squares, (sq) => {
+      const { row, col } = this.algebraicToCoords(sq);
+      const sqEl = this.getSquareEl(row, col);
+      sqEl.classList.add("select-screen-choosable");
+    });
+
+    const selectScreen = document.getElementById("select-piece-screen");
+    if (selectScreen) {
+      selectScreen.classList.remove("opacity-hidden");
+    }
+
+    window["blockDragging"] = true;
+  }
+
+  hide_select_piece_screen() {
+    this.clearHighlights("selected");
+    this.clearHighlights("select-screen-choosable");
+
+    const selectScreen = document.getElementById("select-piece-screen");
+    if (selectScreen) {
+      selectScreen.classList.add("opacity-hidden");
+    }
+  }
+
   removeFocus() {
     const currentActiveElement = document.activeElement;
     currentActiveElement.blur();
