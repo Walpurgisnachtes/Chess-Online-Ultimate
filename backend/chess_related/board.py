@@ -6,6 +6,8 @@ from chess_related.piece import BasePiece, KingPiece, QueenPiece, BishopPiece, K
 from chess_related.chess_utils import *
 
 from misc.enums import PieceName
+
+from controller_related.event_controller import EventHandler
 class Board:
     """
     Represents an 8x8 chess board with support for chess variants.
@@ -17,6 +19,7 @@ class Board:
         self.board: List[List[Optional[BasePiece]]] = [
             [NonePiece() for _ in range(8)] for _ in range(8)
         ]
+        self.card_event_handler: EventHandler = None
         
     def setup_standard_position(self):
         # Black back row (row 0)
@@ -192,6 +195,12 @@ class Board:
         else:
             piece.uuid = uuid4()
         
+        if self.card_event_handler:
+            self.card_event_handler.dispatch_event("piece_placed", data={
+                "square": square,
+                "piece": piece
+            })
+        
         return True
 
     def remove_piece(self, square: str) -> Optional[BasePiece]:
@@ -208,6 +217,13 @@ class Board:
         row_idx, column_idx = self.square_notation_to_array_index(square)
         if 0 <= row_idx < 8 and 0 <= column_idx < 8:
             self.board[row_idx][column_idx] = NonePiece()
+        
+        if self.card_event_handler:
+            self.card_event_handler.dispatch_event("piece_placed", data={
+                "square": square,
+                "piece": piece
+            })
+            
         return piece
 
     def is_empty(self, square: str) -> bool:

@@ -42,6 +42,8 @@ class GameController:
         self.card_event_handler = EventHandler()
         self.current_player = self.PLAYER_COLOR_WHITE
         
+        self.board.card_event_handler = self.card_event_handler
+        
         card_base = StaticCardBase.instance()
         self.all_card_ids = [card.id for card in card_base.all_cards()]
         self.card_classes = {
@@ -177,12 +179,17 @@ class GameController:
 
         filters: Dict[str, Union[str, List[str]]] = predicate.get("filter", {})
         color_filter = filters.get("color", "all")
+        friendly_color = self.current_player        
+        enemy_color = self.PLAYER_COLOR_BLACK if self.current_player == self.PLAYER_COLOR_WHITE else self.PLAYER_COLOR_WHITE
+        
         if isinstance(color_filter, str):
             if color_filter == "all":
-                color_filter = ["friendly", "enemy"]
-            else:
-                color_filter = [color_filter]
-
+                color_filter = [friendly_color, enemy_color]
+            elif color_filter == "friendly":
+                color_filter = [friendly_color]
+            elif color_filter == "enemy":
+                color_filter = [enemy_color]
+        
         piece_type_filter = filters.get("piece_type")
         if piece_type_filter:
             piece_type_filter = set(piece_type_filter)
@@ -190,7 +197,7 @@ class GameController:
         result_squares: List[str] = []
         for i, row in enumerate(chess_board):
             for j, piece in enumerate(row):
-                if piece is None:
+                if isinstance(piece, NonePiece):
                     continue
                 if color_filter and piece.color not in color_filter:
                     continue
@@ -200,10 +207,11 @@ class GameController:
                 square = self.board.array_index_to_square_notation(i, j)
                 result_squares.append(square)
 
+        print(result_squares)
         min_required = predicate.get("min")
         required = predicate.get("required", False)
 
-        if min_required is not None and min_required > 0 and len(result_squares) == 0:
+        if min_required is not None and min_required > 0 and len(result_squares) < min_required:
             if required:
                 raise ValueError(
                     f"Predicate requires at least {min_required} matches."
@@ -211,19 +219,22 @@ class GameController:
 
         return result_squares
 
-    def select(self, predicate: dict, timeout: float = 60.0) -> Optional[dict]:
+    def select(self, predicate: dict, timeout: float = 120.0) -> Optional[dict]:
         self._pending_selection = Event()
         self._selection_result = None
         
         try:
             search_result: Dict[str, Union[str, List[str]]] = self.search(predicate)
-        except:
+        except Exception as e:
+            print(f"No valid target in search result... Error: {e}")
             return None
 
         self.event_handler.dispatch_event("select", data={
             "room": self.room,
             "select_type": search_result["type"],
             "select_from_item": search_result["result"],
+            "min": predicate["min"],
+            "max": predicate["max"],
             "current_player": self.current_player
         })
 
@@ -265,7 +276,8 @@ class GameController:
             return False
 
         # Get prototype from StaticCardBase
-        card_prototype = StaticCardBase.instance().get_by_id(card_instance.id)
+        # card_prototype = StaticCardBase.instance().get_by_id(card_instance.id)
+        card_prototype = StaticCardBase.instance().get_by_id("10001")
         if not card_prototype:
             return False
 
@@ -306,14 +318,14 @@ class GameController:
         # Dynamically load card class
         card_class_name = f"Card{card_prototype.id}"
         try:
-            card_module = import_module(f"cards.{card_prototype.id}")
+            card_module = import_module(f"cards.{card_class_name}")
             card_class = getattr(card_module, card_class_name)
         except (ImportError, AttributeError):
             print(f"[ERROR] Card {card_prototype.id} class not found")
             return
 
         # Instantiate and execute
-        card_obj = card_class(controller=self)
+        card_obj: Card = card_class(controller=self)
         card_obj.exec()
     
     def move_piece(self, move_object: Dict[str, str]) -> Dict[str, bool]:
@@ -503,6 +515,8 @@ Checking rule \"{color} {rule}\"
             self.card_event_handler.dispatch_event("card_drawn", data={
                 "card_id": [card.id for card in drawn_cards],
             })
+            
+            player.prestige = 5
         self.board.setup_standard_position()
     
     def remove_piece(self, piece_pos_square):

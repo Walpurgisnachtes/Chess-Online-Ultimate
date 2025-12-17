@@ -621,6 +621,7 @@ def on_chosen_by_selector(data):
         return
 
     controller: GameController = games[room].get('controller')
+    print(selected)
     if controller:
         # Forward to controller (resolves waiting select())
         controller.resolve_selection(selected)
@@ -783,17 +784,35 @@ def on_disconnect():
 def handle_select_event(data):
     room = data['room']
     
+    if not room or room not in games:
+        return None
+    
+    game = games[room]
+    controller: GameController = game["controller"]
+    player = controller.players.get(controller.current_player)
+    
+    if not player:
+        return None
+    
+    sid = player.sid
+    
     emit("open_selector", {
-        "predicate": data['predicate'],
-        "current_player": data['current_player']
-    }, room=room)
+        "select_type": data["select_type"],
+        "select_from_item": data["select_from_item"],
+        "min": data["min"],
+        "max": data["max"],
+        "current_player": data["current_player"]
+    }, to=sid)
 
 # Bridge: send chess piece removal signal
 @set_event_handler("remove_piece")
 def handle_piece_removal_event(data):
     room = data['room']
     
-    emit("open_selector", {
+    if not room or room not in games:
+        return None
+    
+    emit("remove_piece", {
         "position": data['position']
     }, room=room)
     
