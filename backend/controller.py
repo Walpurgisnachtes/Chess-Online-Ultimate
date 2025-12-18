@@ -63,7 +63,20 @@ class GameController:
         # For blocking selection (synchronous-like wait)
         self._pending_selection = None  # Will hold future-like object
         self._selection_result = None
+    
+    def resolve_player_colors(self, player_color: str) -> List[str]:
+        friendly = self.current_player
+        enemy = self.PLAYER_COLOR_BLACK if friendly == self.PLAYER_COLOR_WHITE else self.PLAYER_COLOR_WHITE
         
+        mapping = {
+            "all": [friendly, enemy],
+            "friendly": [friendly],
+            "enemy": [enemy]
+        }
+        
+        # Returns the mapped list, or the specific color in a list if not found in mapping
+        return mapping.get(player_color, [player_color])
+    
     def search(self, predicate: dict) -> Dict[str, Union[str, List[str]]]:
         if predicate.get("type") == "piece":
             return {
@@ -179,16 +192,7 @@ class GameController:
 
         filters: Dict[str, Union[str, List[str]]] = predicate.get("filter", {})
         color_filter = filters.get("color", "all")
-        friendly_color = self.current_player        
-        enemy_color = self.PLAYER_COLOR_BLACK if self.current_player == self.PLAYER_COLOR_WHITE else self.PLAYER_COLOR_WHITE
-        
-        if isinstance(color_filter, str):
-            if color_filter == "all":
-                color_filter = [friendly_color, enemy_color]
-            elif color_filter == "friendly":
-                color_filter = [friendly_color]
-            elif color_filter == "enemy":
-                color_filter = [enemy_color]
+        interpreted_color_filter = self.resolve_player_colors(color_filter)
         
         piece_type_filter = filters.get("piece_type")
         if piece_type_filter:
@@ -199,7 +203,7 @@ class GameController:
             for j, piece in enumerate(row):
                 if isinstance(piece, NonePiece):
                     continue
-                if color_filter and piece.color not in color_filter:
+                if interpreted_color_filter and piece.color not in interpreted_color_filter:
                     continue
                 if piece_type_filter and piece.__class__.__name__ not in piece_type_filter:
                     continue
@@ -257,7 +261,7 @@ class GameController:
         if self._pending_selection:
             self._pending_selection.resolved = True
     
-    def try_play_card_with_index_in_hand(self, hand_index: int) -> bool:
+    def try_play_card_with_index_in_hand(self, hand_index: int) -> Dict[str, Union[str, bool]]:
         """
         Validate and begin playing a card from the current player's hand.
         Returns True if card is accepted and execution begins.
@@ -277,7 +281,7 @@ class GameController:
 
         # Get prototype from StaticCardBase
         # card_prototype = StaticCardBase.instance().get_by_id(card_instance.id)
-        card_prototype = StaticCardBase.instance().get_by_id("10001")
+        card_prototype = StaticCardBase.instance().get_by_id("20001")
         if not card_prototype:
             return False
 
@@ -327,7 +331,13 @@ class GameController:
         # Instantiate and execute
         card_obj: Card = card_class(controller=self)
         card_obj.exec()
-    
+        
+        self.event_handler.dispatch_event("update_hand", data={
+            "room": self.room,
+            "white_hand": self.players.get(self.PLAYER_COLOR_WHITE).hand,
+            "black_hand": self.players.get(self.PLAYER_COLOR_BLACK).hand
+        })
+
     def move_piece(self, move_object: Dict[str, str]) -> Dict[str, bool]:
         from_where = move_object.get("from", "a8")
         to_where = move_object.get("to", "a1")
@@ -393,7 +403,7 @@ class GameController:
             if self.check_move_by_rule(rule, from_row, from_col, to_row, to_col, piece.color):
                 return True
         return False
-    
+
     def get_en_passant_square(self, from_square: str, to_square: str, color: str) -> Optional[str]:
         from_row, from_col = self.board.square_notation_to_array_index(from_square)
         to_row, to_col = self.board.square_notation_to_array_index(to_square)
@@ -506,7 +516,7 @@ Checking rule \"{color} {rule}\"
         return (color == self.PLAYER_COLOR_WHITE and rank == 8) or (color == self.PLAYER_COLOR_BLACK and rank == 1)
     
     def game_start(self):
-        for player in self.players.values():
+        for color, player in self.players.items():
             self.card_event_handler.dispatch_event("game_start")
             self.card_event_handler.dispatch_event("game_start_draw")
             player.deck.shuffle()
@@ -514,16 +524,29 @@ Checking rule \"{color} {rule}\"
             player.hand = drawn_cards
             self.card_event_handler.dispatch_event("card_drawn", data={
                 "card_id": [card.id for card in drawn_cards],
+                "player_color": color
             })
             
             player.prestige = 5
         self.board.setup_standard_position()
     
-    def remove_piece(self, piece_pos_square):
+    def remove_piece(self, piece_pos_square: str):
         self.board.remove_piece(piece_pos_square)
         self.event_handler.dispatch_event(
             event_name="remove_piece", 
             data={
                 "room": self.room,
                 "position": piece_pos_square
+            })
+        
+    def draw(self, player_color: str, amount: int):
+        interpreted_color_filter = self.resolve_player_colors(player_color)
+        
+        for player_color in interpreted_color_filter:
+            player = self.players[player_color]
+            
+            drawn_cards = player.deck.draw(amount)
+            player.hand.extend(drawn_cards)
+            self.card_event_handler.dispatch_event("card_drawn", data={
+                "card_id": [card.id for card in drawn_cards],
             })

@@ -128,7 +128,7 @@ def change_json_card_id_list_into_card_object(card_ids: List[str]) -> List[Card]
             return []
     return card_list
 
-def change_card_object_into_json_card_object(cards: List[Card]) -> List[Dict[str, str]]:
+def change_card_objects_into_json_card_object(cards: List[Card]) -> List[Dict[str, str]]:
     return [
         {
             "name": card.name,
@@ -562,7 +562,7 @@ def on_get_client_game_data(data):
     # Determine enemy automatically
     requesting_enemy_player = white_player if requesting_player is black_player else black_player
     
-    requesting_player_hand = change_card_object_into_json_card_object(requesting_player.hand)
+    requesting_player_hand = change_card_objects_into_json_card_object(requesting_player.hand)
     requesting_enemy_hand_count = len(requesting_enemy_player.hand)
 
     emit("client_game_data_got", {
@@ -601,7 +601,7 @@ def on_card_try_played(data):
     current_player_obj = game['players'].get(current_player_color)
 
     if current_player_obj.sid != sid:
-        emit("error", {"msg": "It's not your turn!"}, to=sid)
+        emit("message", {"msg": "It's not your turn!"}, to=sid)
         return
 
     # Ask controller to validate and play the card
@@ -820,11 +820,52 @@ def handle_piece_removal_event(data):
 @set_event_handler("card_play_accepted")
 def handle_card_play_accepted(data):
     room = data['room']
+    
+    if not room or room not in games:
+        return None
+    
     emit("accept_play_card", {
         "card_id": data['card_id'],
         "player_color": data['player_color'],
         "hand_index": data['hand_index']
     }, room=room)
+
+@set_event_handler("update_hand")
+def handle_hand_updated(data):
+    room = data.get('room')
+
+    # 1. Early exit with clear conditions
+    if not room or room not in games:
+        return None
+    
+    game = games.get(room)
+
+    controller: GameController = game["controller"]
+    white = controller.players.get(controller.PLAYER_COLOR_WHITE)
+    black = controller.players.get(controller.PLAYER_COLOR_BLACK)
+
+    if not (white and black):
+        return None
+
+    # 2. Define the hands mapping
+    hands = {
+        "white": data.get("white_hand", []),
+        "black": data.get("black_hand", [])
+    }
+
+    # 3. Create a configuration for targeted emits
+    # Each entry: (Target Player SID, Friendly Hand, Enemy Hand Count)
+    update_configs = [
+        (white.sid, change_card_objects_into_json_card_object(hands["white"]), len(hands["black"])),
+        (black.sid, change_card_objects_into_json_card_object(hands["black"]), len(hands["white"]))
+    ]
+
+    # 4. Execute emissions
+    for sid, friendly_hand, enemy_count in update_configs:
+        emit("update_hand", {
+            "friendlyHand": friendly_hand,
+            "enemyHandCount": enemy_count
+        }, to=sid)
 
 if __name__ == '__main__':
     server_start()

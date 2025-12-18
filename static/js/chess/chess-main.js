@@ -153,6 +153,26 @@ class ChessLogicLocalController {
       }
     });
 
+    this.socket.on("accept_play_card", async (data) => {
+      const removedCard = document.querySelector(
+        `.friend-card[data-card-id-in-hand="${data.hand_index}"]`
+      );
+      if (removedCard) {
+        removedCard.remove();
+      }
+    });
+
+    this.socket.on("update_hand", async (data) => {
+      const cardDataArray = data.friendlyHand;
+      const enemyHandCount = data.enemyHandCount;
+      if (_.isArray(cardDataArray)) {
+        CardGenerationHelper.generateHandCards(cardDataArray);
+        CardGenerationHelper.generateEnemyHandCards(enemyHandCount);
+      } else {
+        await this.disconnect("Session expired. Please log in again.");
+      }
+    });
+
     this.socket.on("game_over", async (data) => {
       await modal.messageOnly(data.msg);
       window.location.href = "/home";
