@@ -15,6 +15,7 @@ from card_related.static_card_base import StaticCardBase, StaticSystemBase
 from chess_related.board import Board
 from chess_related.piece import BasePiece, KingPiece, QueenPiece, BishopPiece, KnightPiece, RookPiece, PawnPiece, NonePiece
 from chess_related.chess_utils import *
+from chess_related.status_effect import StatusEffect
 
 from controller_related.event_controller import EventHandler
 from controller_related.static_filter_base import StaticFilterBase
@@ -288,7 +289,7 @@ class GameController:
 
         # Get prototype from StaticCardBase
         # card_prototype = StaticCardBase.instance().get_by_id(card_instance.id)
-        card_prototype = StaticCardBase.instance().get_by_id("10002")
+        card_prototype = StaticCardBase.instance().get_by_id("10003")
         if not card_prototype:
             return False
 
@@ -356,11 +357,14 @@ class GameController:
         }
 
         # 1. Get the piece from the board
-        print(self.board)
         piece = self.board.get_piece_at_square(from_where)
+        print(f"Piece: {piece.__class__.__name__}, Color: {piece.color}")
         if not piece or piece.color != self.current_player:
-            print(f"Piece: {piece.__class__.__name__}, Color: {piece.color}")
             print("not passing piece color check")
+            return result
+        is_movable = piece.has_status("movable") or piece.has_status("card_given_movable")
+        if not is_movable:
+            print("not passing movable piece check")
             return result
 
         # 2. Check if move is possible under current moving rules
@@ -374,6 +378,7 @@ class GameController:
         if target_piece:
             if target_piece.color == self.current_player or not target_piece.is_capturable:
                 print("not passing piece capturable check")
+                print(target_piece.color, self.current_player, target_piece.is_capturable)
                 return result
             captured = True
 
@@ -393,10 +398,21 @@ class GameController:
         # Handle promotion if applicable
         if piece._name == PieceName.PAWN and self.is_promotion_rank(to_where, piece.color) and promotion != "none":
             self.board.move_piece(from_where, to_where, en_passant_square, promotion=promotion if promotion != "none" else None)
-
+        
         self.board.move_piece(from_where, to_where, en_passant_square)
+        
+        for row in self.board.board:
+            for piece in row:
+                if not piece or isinstance(piece, NonePiece):
+                    continue
+                self.remove_piece_status(piece, "movable", stack=-1)
+        self.remove_piece_status(piece, "card_given_movable", stack=-1)
 
         return result
+
+    def check_property_bound_with_status(self, piece: BasePiece):
+        piece.is_capturable = not piece.has_status("uncapturable")
+        piece.is_removable = not piece.has_status("unremovable")
 
     def is_valid_move(self, piece: BasePiece, from_square: str, to_square: str) -> bool:
         """
