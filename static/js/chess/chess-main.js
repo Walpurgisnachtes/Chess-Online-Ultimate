@@ -374,13 +374,13 @@ class ChessLogicLocalController {
   }
 
   updateTurnStatus() {
-    const turnSwitcher = document.getElementById("game-status");
-    if (!turnSwitcher) return;
-    const turnPlayerStatus = turnSwitcher.querySelector("#turn-player-status");
+    const turnStatus = document.getElementById("game-status");
+    if (!turnStatus) return;
+    const turnPlayerStatus = turnStatus.querySelector("#turn-player-status");
     const isMyTurn = this.game.turn() === this.myColor[0];
-    const turnText = isMyTurn ? "Your turn" : "Opponent's turn";
-    turnPlayerStatus.textContent = turnText;
-    turnSwitcher.disabled = !this.is_moved;
+    const turnText = isMyTurn ? `${isMyTurn && this.is_moved ? "Press to End Turn" : "Your turn"}` : "Opponent's turn";
+    turnPlayerStatus.innerHTML = turnText;
+    turnStatus.disabled = !isMyTurn || !this.is_moved;
   }
 
   async disconnect(msg) {
