@@ -543,6 +543,16 @@ Checking rule \"{color} {rule}\"
             
             player.prestige = 5
         self.board.setup_standard_position()
+        self.turn_start()
+
+    def turn_start(self):
+        for row in self.board.board:
+            for piece in row:
+                if not piece or isinstance(piece, NonePiece):
+                    continue
+                self.add_piece_status(piece, StatusEffect("movable"))
+                
+        self.card_event_handler.dispatch_event("turn_start", data={})
 
     def remove_piece(self, piece_pos_square: str):
         self.board.remove_piece(piece_pos_square)
@@ -564,3 +574,70 @@ Checking rule \"{color} {rule}\"
             self.card_event_handler.dispatch_event("card_drawn", data={
                 "card_id": [card.id for card in drawn_cards],
             })
+
+    def add_piece_status(self, piece: BasePiece, status: StatusEffect) -> None:
+        """Attach a status to a piece and propagate related side effects."""
+        piece.add_status(status)
+        self.check_property_bound_with_status(piece)
+        self.card_event_handler.dispatch_event(
+            "piece_status_added",
+            data={"piece": piece, "status": status},
+        )
+
+    def remove_piece_status(
+        self,
+        piece: BasePiece,
+        status_name: str,
+        stack: int = 0,
+        duration: int = 0,
+    ) -> None:
+        """
+        Remove or tick down a status on a piece.
+
+        * If `stack` is non-zero, delegate to the piece to trim stacks first.
+        * Afterwards, decrement duration (if any remains) and drop the status entirely
+        once its duration expires or stacks vanish.
+        """
+        status = piece.get_status_effect(status_name)
+        if status is None:
+            self.check_property_bound_with_status(piece)
+            return
+
+        if stack:
+            piece.remove_status(status_name, stack)
+            status = piece.get_status_effect(status_name)
+            if status is None:
+                self.check_property_bound_with_status(piece)
+                return  # Status fully removed by stack depletion.
+
+        # Duration-based removal.
+        should_remove = status.decrement_duration(duration) if duration else False
+        if should_remove:
+            piece.remove_status(status_name)
+        self.check_property_bound_with_status(piece)
+
+    def turn_end(self):
+        """Resolve end-of-turn status countdowns, fire events, and swap the active player."""
+        self.card_event_handler.dispatch_event("turn_end", data={})
+
+        for row in self.board.board:
+            for piece in row:
+                if not piece or isinstance(piece, NonePiece):
+                    continue
+
+                for status in list(piece.status):
+                    should_tick = (
+                        status.countdown_method == StatusCountdownMethod.ON_TURN_END
+                        and piece.color == self.current_player
+                    ) or (
+                        status.countdown_method == StatusCountdownMethod.ON_BOTH_TURN_END
+                    )
+
+                    if should_tick:
+                        self.remove_piece_status(piece, status.name, duration=1)
+
+        self.current_player = (
+            self.PLAYER_COLOR_WHITE
+            if self.current_player == self.PLAYER_COLOR_BLACK
+            else self.PLAYER_COLOR_BLACK
+        )

@@ -154,12 +154,7 @@ class ChessLogicLocalController {
     });
 
     this.socket.on("accept_play_card", async (data) => {
-      const removedCard = document.querySelector(
-        `.friend-card[data-card-id-in-hand="${data.hand_index}"]`
-      );
-      if (removedCard) {
-        removedCard.remove();
-      }
+      this.updateTurnStatus();
     });
 
     this.socket.on("update_hand", async (data) => {
@@ -171,6 +166,13 @@ class ChessLogicLocalController {
       } else {
         await this.disconnect("Session expired. Please log in again.");
       }
+    });
+
+    this.socket.on("turn_end", async (data) => {
+      console.log(`Turn end. Now is ${data.current_color} side's turn`)
+      this.setTurn(data.current_color);
+      this.is_moved = false;
+      this.updateTurnStatus();
     });
 
     this.socket.on("game_over", async (data) => {
@@ -218,8 +220,9 @@ class ChessLogicLocalController {
 
     const turnSwitcher = document.getElementById("game-status");
     turnSwitcher.addEventListener("click", async (e) => {
+      console.log(turnSwitcher, turnSwitcher.disabled)
       if (turnSwitcher.disabled) return;
-      await this.socket.emit("end_turn", {});
+      await this.socket.emit("request_turn_end", {});
     });
 
     const choosePieceConfirmBtn = document.getElementById(
@@ -251,6 +254,14 @@ class ChessLogicLocalController {
     BoardGenerationHelper.render(this.game);
     this.updateTurnStatus();
     this.attachSquareClicks();
+  }
+
+  setTurn(color) {
+    const turnColor = color == "white" ? "w" : "b";
+    let tokens = this.game.fen().split(" ");
+    tokens[1] = turnColor;
+    tokens[3] = "-";
+    this.game.load(tokens.join(" "));
   }
 
   setRoomName() {

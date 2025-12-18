@@ -696,6 +696,41 @@ def on_make_move(data):
             }
         }, to=sid)
 
+@socketio.on('request_turn_end')
+def on_turn_end(data):
+    sid = request.sid
+    username = session.get('username')
+    if not username:
+        emit("error", {"msg": "Not logged in"}, to=sid)
+        return
+
+    room = session.get('room')
+    if not room or room not in games:
+        emit("error", {"msg": "Invalid room"}, to=sid)
+        return
+
+    game = games[room]
+    controller = game.get('controller')
+    if not controller:
+        emit("error", {"msg": "Game not started yet"}, to=sid)
+        return
+
+    # Find which player is trying to play
+    current_player_color = controller.current_player
+    current_player_obj = game['players'].get(current_player_color)
+
+    if current_player_obj.sid != sid:
+        emit("message", {"msg": "It's not your turn!"}, to=sid)
+        return
+    
+    controller.turn_end()
+    
+    emit("turn_end", {
+        "current_color": controller.current_player
+    }, room=room)
+    
+    controller.turn_start()
+
 @socketio.on('resign')
 def on_resign(data):
     room = data['room']
@@ -830,6 +865,7 @@ def handle_card_play_accepted(data):
         "hand_index": data['hand_index']
     }, room=room)
 
+# Bridge: update both side's hand
 @set_event_handler("update_hand")
 def handle_hand_updated(data):
     room = data.get('room')
