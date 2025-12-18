@@ -22,39 +22,38 @@ class Board:
         self.card_event_handler: EventHandler = None
         
     def setup_standard_position(self):
-        # Black back row (row 0)
-        self.board[0] = [
-            RookPiece("black"),
-            KnightPiece("black"),
-            BishopPiece("black"),
-            QueenPiece("black"),
-            KingPiece("black"),
-            BishopPiece("black"),
-            KnightPiece("black"),
-            RookPiece("black")
+        # Mapping of column indices to the corresponding back-row piece classes
+        back_row_types = [
+            RookPiece, KnightPiece, BishopPiece, QueenPiece, 
+            KingPiece, BishopPiece, KnightPiece, RookPiece
         ]
 
-        # Black pawns (row 1)
-        self.board[1] = [PawnPiece("black") for _ in range(8)]
-
-        # Empty rows (2-5)
-        for row in range(2, 6):
-            self.board[row] = [NonePiece() for _ in range(8)]
-
-        # White pawns (row 6)
-        self.board[6] = [PawnPiece("white") for _ in range(8)]
-
-        # White back row (row 7)
-        self.board[7] = [
-            RookPiece("white"),
-            KnightPiece("white"),
-            BishopPiece("white"),
-            QueenPiece("white"),
-            KingPiece("white"),
-            BishopPiece("white"),
-            KnightPiece("white"),
-            RookPiece("white")
-        ]
+        for row in range(8):
+            for col in range(8):
+                # Convert current loop coordinates to square notation (e.g., "a8")
+                square = self.array_index_to_square_notation(row, col)
+                
+                # 1. Black Back Row
+                if row == 0:
+                    piece_class = back_row_types[col]
+                    self.place_piece(piece_class("black"), square)
+                
+                # 2. Black Pawns
+                elif row == 1:
+                    self.place_piece(PawnPiece("black"), square)
+                
+                # 3. Empty Rows
+                elif 2 <= row <= 5:
+                    self.place_piece(NonePiece(), square)
+                
+                # 4. White Pawns
+                elif row == 6:
+                    self.place_piece(PawnPiece("white"), square)
+                
+                # 5. White Back Row
+                elif row == 7:
+                    piece_class = back_row_types[col]
+                    self.place_piece(piece_class("white"), square)
     
     def array_index_to_square_notation(self, i: int, j: int) -> str:
         """
@@ -147,6 +146,30 @@ class Board:
         # If the loop finishes without finding the element
         return None 
     
+    def get_square_of_piece(self, piece: BasePiece) -> Optional[str]:
+        """
+        Searches the board for a piece with a matching UUID and 
+        returns its square notation (e.g., 'a1').
+        """
+        # 1. Skip search if the target is a NonePiece (since they don't have unique IDs)
+        if isinstance(piece, NonePiece):
+            return None
+
+        # 2. Iterate through the 8x8 board array
+        for i in range(8):
+            for j in range(8):
+                current_piece = self.board[i][j]
+                
+                # 3. Compare UUIDs to find the unique match
+                # We check if it's a NonePiece first to avoid AttributeErrors
+                if not isinstance(current_piece, NonePiece):
+                    if current_piece.uuid == piece.uuid:
+                        # 4. Convert the array indices back to square notation
+                        return self.array_index_to_square_notation(i, j)
+                        
+        # Return None if the piece is not on the board
+        return None
+    
     def move_piece(self, from_sq: str, to_sq: str, en_passant_square: str = None, promotion: str = None) -> bool:
         promotion_dict: Dict[PieceName, BasePiece] = {
             PieceName.BISHOP: BishopPiece,
@@ -190,10 +213,11 @@ class Board:
         row_idx, column_idx = self.square_notation_to_array_index(square)
         self.board[row_idx][column_idx] = piece
         
-        if not uuid:
-            piece.uuid = uuid
-        else:
-            piece.uuid = uuid4()
+        if piece.uuid == UUID(int=0):
+            if not uuid:
+                piece.uuid = uuid4()
+            else:
+                piece.uuid = uuid
         
         if self.card_event_handler:
             self.card_event_handler.dispatch_event("piece_placed", data={

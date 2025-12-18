@@ -17,6 +17,7 @@ from chess_related.piece import BasePiece, KingPiece, QueenPiece, BishopPiece, K
 from chess_related.chess_utils import *
 
 from controller_related.event_controller import EventHandler
+from controller_related.static_filter_base import StaticFilterBase
 
 from misc.enums import StatusCountdownMethod, PieceName
 
@@ -43,6 +44,8 @@ class GameController:
         self.current_player = self.PLAYER_COLOR_WHITE
         
         self.board.card_event_handler = self.card_event_handler
+        
+        self.filters: StaticFilterBase = []
         
         card_base = StaticCardBase.instance()
         self.all_card_ids = [card.id for card in card_base.all_cards()]
@@ -194,9 +197,11 @@ class GameController:
         color_filter = filters.get("color", "all")
         interpreted_color_filter = self.resolve_player_colors(color_filter)
         
-        piece_type_filter = filters.get("piece_type")
+        piece_type_filter = filters.get("piece_type", None)
         if piece_type_filter:
             piece_type_filter = set(piece_type_filter)
+        
+        custom_filters = filters.get("custom", [])
 
         result_squares: List[str] = []
         for i, row in enumerate(chess_board):
@@ -206,6 +211,8 @@ class GameController:
                 if interpreted_color_filter and piece.color not in interpreted_color_filter:
                     continue
                 if piece_type_filter and piece.__class__.__name__ not in piece_type_filter:
+                    continue
+                if len(custom_filters) > 0 and not self.pass_custom_filters(piece, custom_filters):
                     continue
 
                 square = self.board.array_index_to_square_notation(i, j)
@@ -281,7 +288,7 @@ class GameController:
 
         # Get prototype from StaticCardBase
         # card_prototype = StaticCardBase.instance().get_by_id(card_instance.id)
-        card_prototype = StaticCardBase.instance().get_by_id("20001")
+        card_prototype = StaticCardBase.instance().get_by_id("10002")
         if not card_prototype:
             return False
 
@@ -514,7 +521,14 @@ Checking rule \"{color} {rule}\"
     def is_promotion_rank(self, square: str, color: str) -> bool:
         rank = int(square[1])
         return (color == self.PLAYER_COLOR_WHITE and rank == 8) or (color == self.PLAYER_COLOR_BLACK and rank == 1)
-    
+
+    def pass_custom_filters(self, piece, filter_names) -> bool:
+        return any(
+            getattr(StaticFilterBase, name)(piece, self.board)
+            for name in filter_names
+            if hasattr(StaticFilterBase, name) and callable(getattr(StaticFilterBase, name))
+        )
+
     def game_start(self):
         for color, player in self.players.items():
             self.card_event_handler.dispatch_event("game_start")
@@ -529,7 +543,7 @@ Checking rule \"{color} {rule}\"
             
             player.prestige = 5
         self.board.setup_standard_position()
-    
+
     def remove_piece(self, piece_pos_square: str):
         self.board.remove_piece(piece_pos_square)
         self.event_handler.dispatch_event(
@@ -538,7 +552,7 @@ Checking rule \"{color} {rule}\"
                 "room": self.room,
                 "position": piece_pos_square
             })
-        
+
     def draw(self, player_color: str, amount: int):
         interpreted_color_filter = self.resolve_player_colors(player_color)
         

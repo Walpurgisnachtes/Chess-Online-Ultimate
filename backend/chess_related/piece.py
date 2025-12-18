@@ -48,8 +48,7 @@ class BasePiece:
         spawning_point: str = "",
         is_capturable: bool = True,
         is_lose_on_capture: bool = False,
-        is_removable: bool = True,
-        uuid: UUID = UUID(int=0),
+        is_removable: bool = True
     ) -> None:
         self._name = piece_name.value
         self._move_rule = [p.value for p in move_rule]
@@ -59,7 +58,7 @@ class BasePiece:
         self.is_capturable = is_capturable
         self.is_lose_on_capture = is_lose_on_capture
         self.is_removable = is_removable
-        self.uuid = uuid
+        self.uuid: UUID = UUID(int=0)
 
     @property
     def name(self) -> str:
@@ -137,7 +136,7 @@ class BasePiece:
     # ────────────────────────────── Representation ────────────────────────────── #
 
     def __str__(self) -> str:
-        return self.name.capitalize()
+        return f"{self.name.capitalize()}[uuid={self.uuid}]"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}[{self.color}](name={self.name!r})"

@@ -15,6 +15,10 @@ from controller import GameController
 from controller_related.event_controller import EventHandler
 
 class Card20001:
+    """
+    Card ID: 20001
+    Description: "Draw 2 cards."
+    """
     
     def __init__(self, controller: GameController):
         self.controller = controller
