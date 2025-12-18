@@ -19,7 +19,8 @@ class CardGenerator {
     const playerArea = document.querySelector("#player-area .hand-area");
     const previewEl = document.getElementById("in-game-preview-card");
 
-    if (!playerArea) playerArea.innerHTML = "";
+    if (!playerArea) return;
+    playerArea.innerHTML = "";
     this.#previewCache.clear();
 
     const count = cardsData.length;
