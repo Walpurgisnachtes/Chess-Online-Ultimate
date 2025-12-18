@@ -213,6 +213,9 @@ class Board:
         row_idx, column_idx = self.square_notation_to_array_index(square)
         self.board[row_idx][column_idx] = piece
         
+        if piece.spawning_point == "":
+            piece.spawning_point = square
+        
         if piece.uuid == UUID(int=0):
             if not uuid:
                 piece.uuid = uuid4()
