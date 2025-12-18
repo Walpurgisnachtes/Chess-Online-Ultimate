@@ -55,9 +55,9 @@ class ChessLogicLocalController {
       console.log("waiting...");
     });
 
-    this.socket.on("client_game_data_got", async (clientData) => {
-      const cardDataArray = clientData.friendlyHand;
-      const enemyHandCount = clientData.enemyHandCount;
+    this.socket.on("client_game_data_got", async (data) => {
+      const cardDataArray = data.friendlyHand;
+      const enemyHandCount = data.enemyHandCount;
       if (_.isArray(cardDataArray)) {
         CardGenerationHelper.generateHandCards(cardDataArray);
         CardGenerationHelper.generateEnemyHandCards(enemyHandCount);
