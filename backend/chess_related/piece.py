@@ -95,22 +95,22 @@ class BasePiece:
         self.status.append(status)
         return status
 
-    def remove_status(self, name: str, stacks: int = 0) -> int:
+    def remove_status(self, name: str, stacks: int = -1) -> int:
         """
         Remove stacks of a status.
 
         Args:
             name: Status to reduce/remove
-            stacks: Number of stacks to remove (0 = remove all)
+            stacks: Number of stacks to remove (-1 = remove all)
 
         Returns:
-            int: Remaining stacks (0 if fully removed)
+            int: Remaining stacks (-1 if fully removed)
         """
         effect = self.get_status_effect(name)
         if not effect:
             return 0
 
-        if stacks <= 0 or stacks >= effect.stack:
+        if stacks == -1 or stacks >= effect.stack:
             self.status = [s for s in self.status if s.name != name]
             return 0
 
