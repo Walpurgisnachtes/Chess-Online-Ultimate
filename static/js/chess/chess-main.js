@@ -91,6 +91,7 @@ class ChessLogicLocalController {
       // Critical: Check if the move was successful on the server
       if (!move.success) {
         await this.disconnect("Session expired. Please log in again.");
+        return;
       }
 
       const { from, to, promotion, en_passant, success } = move;
@@ -103,20 +104,25 @@ class ChessLogicLocalController {
       //   this.game.turn() === "w" ? "w" : "b" // color of the piece that just moved
       // );
 
-      // Update internal game state and re-render board
-      this.game.remove(to);
+      // Update internal state
+      const fromPiece = this.game.get(from);
+
+      this.game.remove(from);
       if (en_passant) {
         this.game.remove(en_passant);
       }
-      const fromPiece = this.game.get(from);
+
       this.game.put(fromPiece, to);
-      this.game.remove(from);
 
       BoardGenerationHelper.render(this.game);
       this.updateTurnStatus();
       BoardGenerationHelper.clearHighlights();
+      this.selectedSquare = null;
+    });
 
-      this.selectedSquare = null; // reset selection
+
+      BoardGenerationHelper.render(this.game);
+      BoardGenerationHelper.clearHighlights();
     });
 
     this.socket.on("remove_piece", async (data) => {
@@ -127,6 +133,13 @@ class ChessLogicLocalController {
 
       BoardGenerationHelper.render(this.game);
       BoardGenerationHelper.clearHighlights();
+    });
+
+    this.socket.on("turn_end", async (data) => {
+      console.log(`Turn end. Now is ${data.current_color} side's turn`);
+      this.game.setTurn(data.current_color); // Simplified
+      this.is_moved = false;
+      this.updateTurnStatus();
     });
 
     this.socket.on("open_selector", async (data) => {
@@ -169,7 +182,7 @@ class ChessLogicLocalController {
     });
 
     this.socket.on("turn_end", async (data) => {
-      console.log(`Turn end. Now is ${data.current_color} side's turn`)
+      console.log(`Turn end. Now is ${data.current_color} side's turn`);
       this.setTurn(data.current_color);
       this.is_moved = false;
       this.updateTurnStatus();
@@ -220,7 +233,7 @@ class ChessLogicLocalController {
 
     const turnSwitcher = document.getElementById("game-status");
     turnSwitcher.addEventListener("click", async (e) => {
-      console.log(turnSwitcher, turnSwitcher.disabled)
+      console.log(turnSwitcher, turnSwitcher.disabled);
       if (turnSwitcher.disabled) return;
       await this.socket.emit("request_turn_end", {});
     });
@@ -257,11 +270,8 @@ class ChessLogicLocalController {
   }
 
   setTurn(color) {
-    const turnColor = color == "white" ? "w" : "b";
-    let tokens = this.game.fen().split(" ");
-    tokens[1] = turnColor;
-    tokens[3] = "-";
-    this.game.load(tokens.join(" "));
+    // This is now just a pass-through to the game object
+    this.game.setTurn(color);
   }
 
   setRoomName() {
@@ -389,7 +399,9 @@ class ChessLogicLocalController {
     if (!turnStatus) return;
     const turnPlayerStatus = turnStatus.querySelector("#turn-player-status");
     const isMyTurn = this.game.turn() === this.myColor[0];
-    const turnText = isMyTurn ? `${isMyTurn && this.is_moved ? "Press to End Turn" : "Your turn"}` : "Opponent's turn";
+    const turnText = isMyTurn
+      ? `${isMyTurn && this.is_moved ? "Press to End Turn" : "Your turn"}`
+      : "Opponent's turn";
     turnPlayerStatus.innerHTML = turnText;
     turnStatus.disabled = !isMyTurn || !this.is_moved;
   }
