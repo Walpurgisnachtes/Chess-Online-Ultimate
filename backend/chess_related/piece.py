@@ -16,6 +16,7 @@ Features:
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import List, Optional
 from uuid import UUID
 
@@ -132,6 +133,42 @@ class BasePiece:
         """Get current stack count of a status (0 if absent)."""
         effect = self.get_status_effect(name)
         return effect.stack if effect else 0
+    
+    # ────────────────────────────── Change PieceType ────────────────────────────── #
+    
+    @classmethod
+    def from_piece_type(cls, piece: "BasePiece") -> "BasePiece":
+        """
+        Create a new piece of type ``cls`` by copying the full runtime state of
+        another ``BasePiece`` instance (color, statuses, UUID, flags, etc.)
+        while adopting the target class’s intrinsic identity (name, move rules).
+
+        Args:
+            piece: The source piece to convert.
+
+        Returns:
+            BasePiece: A new instance of ``cls`` carrying over the source state.
+
+        Raises:
+            TypeError: If ``piece`` is not a ``BasePiece``.
+        """
+        if not isinstance(piece, BasePiece):
+            raise TypeError(
+                f"{cls.__name__}.from_piece_type expected BasePiece, "
+                f"got {type(piece).__name__}"
+            )
+
+        preserved_state = deepcopy(piece.__dict__)
+        preserved_state.pop("_name", None)
+        preserved_state.pop("_move_rule", None)
+        
+        color = preserved_state.get("color", getattr(piece, "color", None))
+        if color is None:
+            raise ValueError("Source piece must define a color before conversion.")
+
+        new_piece = cls(color)
+        new_piece.__dict__.update(preserved_state)
+        return new_piece
 
     # ────────────────────────────── Representation ────────────────────────────── #
 

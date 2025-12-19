@@ -88,7 +88,6 @@ class StaticFilterBase:
         board: Board,
         coords: list[tuple[int, int]],
     ) -> bool:
-        print(f"Checking if piece {piece} is unique in the coordinates {coords}...")
         pieces = StaticFilterBase._piece_at_coords(piece, board, coords)
         return len(pieces) == 1 and pieces[0] == piece
 
@@ -101,9 +100,7 @@ class StaticFilterBase:
         piece_found = []
         for r, c in coords:
             that_piece = board.board[r][c]
-            print(f"r: {r}, c: {c}, that_piece: {that_piece}")
             if not isinstance(that_piece, NonePiece):
                 piece_found.append(that_piece)
 
-        print(f"Found {len(piece_found)} pieces in coordinates. {piece_found}\n")
         return piece_found

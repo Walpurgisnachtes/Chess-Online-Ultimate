@@ -1,7 +1,7 @@
 from copy import deepcopy
 from importlib import import_module
 from pathlib import Path
-from typing import List, Dict, Union, Callable, Any, Optional
+from typing import Type, List, Dict, Union, Callable, Any, Optional
 from types import SimpleNamespace
 from uuid import UUID
 import logging
@@ -219,7 +219,6 @@ class GameController:
                 square = self.board.array_index_to_square_notation(i, j)
                 result_squares.append(square)
 
-        print(result_squares)
         min_required = predicate.get("min")
         required = predicate.get("required", False)
 
@@ -289,7 +288,7 @@ class GameController:
 
         # Get prototype from StaticCardBase
         # card_prototype = StaticCardBase.instance().get_by_id(card_instance.id)
-        card_prototype = StaticCardBase.instance().get_by_id("10003")
+        card_prototype = StaticCardBase.instance().get_by_id("10004")
         if not card_prototype:
             return False
 
@@ -405,7 +404,7 @@ class GameController:
             for piece in row:
                 if not piece or isinstance(piece, NonePiece):
                     continue
-                self.remove_piece_status(piece, "movable", stack=-1)
+                #self.remove_piece_status(piece, "movable", stack=-1)
         self.remove_piece_status(piece, "card_given_movable", stack=-1)
 
         return result
@@ -570,15 +569,6 @@ Checking rule \"{color} {rule}\"
                 
         self.card_event_handler.dispatch_event("turn_start", data={})
 
-    def remove_piece(self, piece_pos_square: str):
-        self.board.remove_piece(piece_pos_square)
-        self.event_handler.dispatch_event(
-            event_name="remove_piece", 
-            data={
-                "room": self.room,
-                "position": piece_pos_square
-            })
-
     def draw(self, player_color: str, amount: int):
         interpreted_color_filter = self.resolve_player_colors(player_color)
         
@@ -590,6 +580,73 @@ Checking rule \"{color} {rule}\"
             self.card_event_handler.dispatch_event("card_drawn", data={
                 "card_id": [card.id for card in drawn_cards],
             })
+
+    def place_piece(self, piece: BasePiece, squares: List[str]):
+        for square in squares:
+            self.board.remove_piece(square)
+            if isinstance(self.board.get_piece_at_square(square), NonePiece):
+                self.board.place_piece(piece, square)
+            self.card_event_handler.dispatch_event("piece_placed", data={
+                "piece": piece,
+                "position": square
+            })
+        self.event_handler.dispatch_event(
+            event_name="place_piece", 
+            data={
+                "room": self.room,
+                "piece": piece.name,
+                "color": piece.color,
+                "position": squares
+            })
+
+    def remove_piece(self, squares: List[str]):
+        for square in squares:
+            piece = self.board.remove_piece(square)
+            if piece:
+                self.card_event_handler.dispatch_event("piece_removed", data={
+                    "piece": piece,
+                    "position": squares
+                })
+        self.event_handler.dispatch_event(
+            event_name="remove_piece", 
+            data={
+                "room": self.room,
+                "position": squares
+            })
+
+    def change_piece(self, target_cls: Type[BasePiece], squares: List[str]) -> None:
+        missing = [
+            square
+            for square in squares
+            if (piece := self.board.get_piece_at_square(square)) is None
+            or isinstance(piece, NonePiece)
+        ]
+        if missing:
+            print(f"No piece found at square(s): {', '.join(missing)}")
+            return
+
+        original_pieces: List[BasePiece] = []
+        new_pieces: List[BasePiece] = []
+
+        for square in squares:
+            original = self.board.get_piece_at_square(square)
+            self.remove_piece([square])
+            new_piece = target_cls.from_piece_type(original)
+
+            original_pieces.append(original)
+            new_pieces.append(new_piece)
+
+            print(f"{original} changed into {new_piece}")
+            self.place_piece(new_piece, [square])
+
+        self.card_event_handler.dispatch_event(
+            "piece_changed",
+            data={
+                "original_piece": original_pieces,
+                "new_piece": new_pieces,
+                "position": squares[:],
+            },
+        )
 
     def add_piece_status(self, piece: BasePiece, status: StatusEffect) -> None:
         """Attach a status to a piece and propagate related side effects."""
