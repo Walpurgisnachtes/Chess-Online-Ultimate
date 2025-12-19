@@ -231,7 +231,7 @@ class GameController:
 
         return result_squares
 
-    def select(self, predicate: dict, timeout: float = 120.0) -> Optional[dict]:
+    def select(self, predicate: dict, timeout: float = 120.0) -> Optional[List[str]]:
         self._pending_selection = Event()
         self._selection_result = None
         
