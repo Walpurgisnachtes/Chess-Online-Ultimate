@@ -120,6 +120,29 @@ class ChessLogicLocalController {
       this.selectedSquare = null;
     });
 
+    this.socket.on("place_piece", async (data) => {
+      // data { name: "knight"}
+      const pieceName = data.piece;
+      const pieceColor = data.color === "white" ? "w" : "b";
+      const positions = data.position;
+      const pieceNameMapper = {
+        pawn: "p",
+        knight: "n",
+        bishop: "b",
+        rook: "r",
+        queen: "q",
+        king: "k",
+      };
+
+      _.forEach(positions, async (sq) => {
+        const type = pieceNameMapper[pieceName];
+        if (!type) {
+          this.disconnect("Session expired. Please log in again.");
+          return;
+        }
+        const color = pieceColor;
+        this.game.put({ type, color }, sq);
+      });
 
       BoardGenerationHelper.render(this.game);
       BoardGenerationHelper.clearHighlights();
