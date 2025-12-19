@@ -839,6 +839,20 @@ def handle_select_event(data):
         "current_player": data["current_player"]
     }, to=sid)
 
+# Bridge: send chess piece placement signal
+@set_event_handler("place_piece")
+def handle_piece_placement_event(data):
+    room = data['room']
+    
+    if not room or room not in games:
+        return None
+    
+    emit("place_piece", {
+        "piece": data["piece"],
+        "color": data["color"],
+        "position": data["position"]
+    }, room=room)
+
 # Bridge: send chess piece removal signal
 @set_event_handler("remove_piece")
 def handle_piece_removal_event(data):
@@ -850,7 +864,7 @@ def handle_piece_removal_event(data):
     emit("remove_piece", {
         "position": data['position']
     }, room=room)
-    
+
 # Bridge: validate card playing
 @set_event_handler("card_play_accepted")
 def handle_card_play_accepted(data):
