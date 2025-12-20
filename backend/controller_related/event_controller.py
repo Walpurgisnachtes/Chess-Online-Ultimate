@@ -20,6 +20,40 @@ class EventHandler:
             "once": once
         })
 
+    def remove(self, event_name: str, callback=None, capture=None):
+        """
+        Remove listeners for `event_name`.
+
+        Args:
+            event_name: The event to clean up.
+            callback: If provided, only this callback is removed.
+            capture: 
+                - True  -> inspect capture phase only
+                - False -> inspect bubble phase only
+                - None  -> inspect both phases (default)
+        """
+        phases = ["capture", "bubble"] if capture is None else \
+                    ["capture"] if capture else ["bubble"]
+
+        for phase in phases:
+            if event_name not in self.listeners[phase]:
+                continue
+
+            if callback is None:
+                # Remove entire event entry
+                del self.listeners[phase][event_name]
+                continue
+
+            filtered = [
+                listener for listener in self.listeners[phase][event_name]
+                if listener["callback"] is not callback
+            ]
+
+            if filtered:
+                self.listeners[phase][event_name] = filtered
+            else:
+                del self.listeners[phase][event_name]
+
     def dispatch_event(self, event_name: str, data: dict = {}):
         """
         1. Executes 'capture' listeners first.
