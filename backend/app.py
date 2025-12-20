@@ -563,11 +563,17 @@ def on_get_client_game_data(data):
     requesting_enemy_player = white_player if requesting_player is black_player else black_player
     
     requesting_player_hand = change_card_objects_into_json_card_object(requesting_player.hand)
+    requesting_player_prestige = requesting_player.prestige
     requesting_enemy_hand_count = len(requesting_enemy_player.hand)
+    requesting_enemy_prestige = requesting_enemy_player.prestige
 
     emit("client_game_data_got", {
+        "friendlyName": requesting_player.username,
         "friendlyHand": requesting_player_hand,
-        "enemyHandCount": requesting_enemy_hand_count
+        "friendlyPrestige": requesting_player_prestige,
+        "enemyName": requesting_enemy_player.username,
+        "enemyHandCount": requesting_enemy_hand_count,
+        "enemyPrestige": requesting_enemy_prestige
     }, to=sid)
 
 @socketio.on('played_card')
@@ -865,6 +871,7 @@ def handle_piece_removal_event(data):
         "position": data['position']
     }, room=room)
 
+
 # Bridge: validate card playing
 @set_event_handler("card_play_accepted")
 def handle_card_play_accepted(data):
@@ -916,6 +923,19 @@ def handle_hand_updated(data):
             "friendlyHand": friendly_hand,
             "enemyHandCount": enemy_count
         }, to=sid)
+
+# Bridge: update both side's prestige
+@set_event_handler("update_prestige")
+def handle_prestige_updated_event(data):
+    room = data['room']
+    
+    if not room or room not in games:
+        return None
+    
+    emit("update_prestige", {
+        "white": data["white"],
+        "black": data["black"],
+    }, room=room)
 
 if __name__ == '__main__':
     server_start()

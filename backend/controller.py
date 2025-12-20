@@ -67,6 +67,12 @@ class GameController:
         # For blocking selection (synchronous-like wait)
         self._pending_selection = None  # Will hold future-like object
         self._selection_result = None
+        
+        # For blocking multiple usage of one card in a single turn
+        self.once_per_turn_tags: Dict[str, List[str]] = {
+            "card_tags": [],
+            "custom_tags": []
+        }
     
     def resolve_player_colors(self, player_color: str) -> List[str]:
         friendly = self.current_player
@@ -75,7 +81,9 @@ class GameController:
         mapping = {
             "all": [friendly, enemy],
             "friendly": [friendly],
-            "enemy": [enemy]
+            "enemy": [enemy],
+            "white": [self.PLAYER_COLOR_WHITE],
+            "black": [self.PLAYER_COLOR_BLACK],
         }
         
         # Returns the mapped list, or the specific color in a list if not found in mapping
@@ -288,7 +296,7 @@ class GameController:
 
         # Get prototype from StaticCardBase
         # card_prototype = StaticCardBase.instance().get_by_id(card_instance.id)
-        card_prototype = StaticCardBase.instance().get_by_id("10004")
+        card_prototype = StaticCardBase.instance().get_by_id("10005")
         if not card_prototype:
             return False
 
@@ -297,7 +305,7 @@ class GameController:
             return False
 
         # Deduct cost
-        current_player.prestige -= card_prototype.cost
+        self.lose_prestige(self.current_player, card_prototype.cost)
         self.card_event_handler.dispatch_event("card_play_prestige_reduced", data={
             "card_id": [card_prototype.id],
         })
@@ -374,7 +382,7 @@ class GameController:
         # 3. Check for capture
         target_piece = self.board.get_piece_at_square(to_where)
         captured = False
-        if target_piece:
+        if target_piece and not isinstance(target_piece, NonePiece):
             if target_piece.color == self.current_player or not target_piece.is_capturable:
                 print("not passing piece capturable check")
                 print(target_piece.color, self.current_player, target_piece.is_capturable)
@@ -383,6 +391,8 @@ class GameController:
 
         # 4. Success — prepare result
         result["success"] = True
+        
+        self.add_piece_status(piece, StatusEffect("moved"))
 
         # 5. If captured and is_lose_on_capture, add win
         if captured and target_piece.is_lose_on_capture:
@@ -390,9 +400,21 @@ class GameController:
 
         # Handle en passant
         en_passant_square = None
+        en_passant_piece = None
         if piece._name == PieceName.PAWN:
             en_passant_square = self.get_en_passant_square(from_where, to_where, piece.color)
-            result['en_passant'] = en_passant_square    
+            en_passant_piece = self.board.get_piece_at_square(en_passant_square)
+            result['en_passant'] = en_passant_square
+        
+        
+        self.card_event_handler.dispatch_event("success_move_made", data={
+            "from": from_where,
+            "to": to_where,
+            "moving_piece": piece,
+            "capture": target_piece,
+            "en_passant_piece": en_passant_piece,
+            "promotion": promotion
+        })
         
         # Handle promotion if applicable
         if piece._name == PieceName.PAWN and self.is_promotion_rank(to_where, piece.color) and promotion != "none":
@@ -401,10 +423,10 @@ class GameController:
         self.board.move_piece(from_where, to_where, en_passant_square)
         
         for row in self.board.board:
-            for piece in row:
-                if not piece or isinstance(piece, NonePiece):
+            for that_piece in row:
+                if not that_piece or isinstance(piece, NonePiece):
                     continue
-                #self.remove_piece_status(piece, "movable", stack=-1)
+                self.remove_piece_status(that_piece, "movable", stack=-1)
         self.remove_piece_status(piece, "card_given_movable", stack=-1)
 
         return result
@@ -556,7 +578,7 @@ Checking rule \"{color} {rule}\"
                 "player_color": color
             })
             
-            player.prestige = 5
+            player.prestige = 10
         self.board.setup_standard_position()
         self.turn_start()
 
@@ -689,9 +711,49 @@ Checking rule \"{color} {rule}\"
             piece.remove_status(status_name)
         self.check_property_bound_with_status(piece)
 
+    def gain_prestige(self, player_color: str, amount: int):
+        interpreted_color_filter = self.resolve_player_colors(player_color)
+        for color in interpreted_color_filter:
+            self.players[color].prestige += amount
+            print(f"{amount} prestige gained by {color} player.")
+        
+        self.card_event_handler.dispatch_event(
+            "prestige_gained",
+            data={"players": interpreted_color_filter, "amount": amount},
+        )
+        self.event_handler.dispatch_event(
+            event_name="update_prestige", 
+            data={
+                "room": self.room,
+                "white": self.players[self.PLAYER_COLOR_WHITE].prestige,
+                "black": self.players[self.PLAYER_COLOR_BLACK].prestige
+            })
+
+    def lose_prestige(self, player_color: str, amount: int):
+        interpreted_color_filter = self.resolve_player_colors(player_color)
+        for color in interpreted_color_filter:
+            self.players[color].prestige -= amount
+            print(f"{amount} prestige lost by {color} player.")
+
+        self.card_event_handler.dispatch_event(
+            "prestige_lost",
+            data={"players": interpreted_color_filter, "amount": amount},
+        )
+        self.event_handler.dispatch_event(
+            event_name="update_prestige",
+            data={
+                "room": self.room,
+                "white": self.players[self.PLAYER_COLOR_WHITE].prestige,
+                "black": self.players[self.PLAYER_COLOR_BLACK].prestige
+            },
+        )
+
     def turn_end(self):
         """Resolve end-of-turn status countdowns, fire events, and swap the active player."""
         self.card_event_handler.dispatch_event("turn_end", data={})
+        
+        for tag_key in self.once_per_turn_tags.keys():
+            self.once_per_turn_tags[tag_key].clear()
 
         for row in self.board.board:
             for piece in row:
