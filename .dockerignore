@@ -1,0 +1,9 @@
+# virtual environment
+venv/*
+
+# Database stuff
+
+# old versions
+*/**/__pycache__/*
+*/**/venv/*
+*.pyc

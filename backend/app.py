@@ -25,14 +25,13 @@ from player_related.player import Player
 from controller import GameController
 
 # Directories
-_current_file_path = os.path.abspath(__file__)
-_backend_dir = os.path.dirname(_current_file_path)
-BASE_DIR = os.path.dirname(_backend_dir)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSS_DIR = os.path.join("static", "css")
 IMG_DIR = os.path.join("static", "img")
 JS_DIR = os.path.join("static", "js")
 TEMP_DIR = "templates"
 DATABASE_DIR = os.path.join("database", "website")
+
 
 
 app = Flask(
