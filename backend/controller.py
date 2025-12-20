@@ -295,8 +295,7 @@ class GameController:
             return False
 
         # Get prototype from StaticCardBase
-        # card_prototype = StaticCardBase.instance().get_by_id(card_instance.id)
-        card_prototype = StaticCardBase.instance().get_by_id("20002")
+        card_prototype = StaticCardBase.instance().get_by_id(card_instance.id)
         if not card_prototype:
             return False
 
