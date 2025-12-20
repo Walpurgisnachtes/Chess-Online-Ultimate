@@ -14,24 +14,24 @@ from controller import GameController
 
 from controller_related.event_controller import EventHandler
 
-class Card10001:
+class Card10004:
     """
-    Card ID: 10001
-    Description: "Select and *Remove* 1 enemy pawn or *minor piece*."
+    Card ID: 10004
+    Description: "If a friendly piece is the only one in its column, *change* it into a knight."
     """
 
     def __init__(self, controller: GameController):
         self.controller = controller
 
     def exec(self):
-        print("[Card 10001] Execution started: Select and remove 1 enemy pawn or minor piece")
+        print("[Card 10004] Execution started: If a friendly piece is the only one in its column, *change* it into a knight.")
 
         # Define the selection predicate
         predicate = {
             "type": "piece",
             "filter": {
-                "color": "enemy",           # Enemy relative to current player
-                "piece_type": ["PawnPiece", "KnightPiece", "BishopPiece"]
+                "color": "friendly",
+                "custom": ["only_of_column"]
             },
             "min": 1,
             "max": 1,
@@ -43,29 +43,18 @@ class Card10001:
 
         # If no valid selection (timeout, cancel, no targets, or room closed)
         if not selected:
-            print("[Card 10001] No valid target selected → effect fizzles")
+            print("[Card 10004] No valid target selected → effect fizzles")
             return
 
         piece_pos_square = selected[0]
         target_piece = self.controller.board.get_piece_at_square(piece_pos_square)
 
         if not target_piece:
-            print("[Card 10001] Selected piece no longer exists → effect fizzles")
+            print("[Card 10004] Selected piece no longer exists → effect fizzles")
             return
 
-        # Validate again (in case board changed during selection delay)
-        if target_piece.color == self.controller.current_player:
-            print("[Card 10001] Selected own piece → invalid")
-            return
+        print(f"[Card 10004] Change {target_piece.name} at {piece_pos_square} to Knight")
 
-        if not isinstance(target_piece, (PawnPiece, KnightPiece, BishopPiece)):
-            print("[Card 10001] Selected piece is not pawn/knight/bishop → invalid")
-            return
+        self.controller.change_piece(KnightPiece, selected)
 
-        # Execute removal
-        print(f"[Card 10001] Removing enemy {target_piece.name} at {piece_pos_square}")
-
-        # Permanently remove from board (no graveyard)
-        self.controller.remove_piece(selected)
-
-        print("[Card 10001] Effect resolved successfully")
+        print("[Card 10004] Effect resolved successfully")

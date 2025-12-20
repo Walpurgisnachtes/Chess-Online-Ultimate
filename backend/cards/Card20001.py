@@ -14,10 +14,18 @@ from controller import GameController
 
 from controller_related.event_controller import EventHandler
 
-class Card00000:
+class Card20001:
+    """
+    Card ID: 20001
+    Description: "Draw 2 cards."
+    """
     
     def __init__(self, controller: GameController):
         self.controller = controller
     
     def exec(self):
-        pass
+        print("[Card 20001] Execution started: Draw 2 cards")
+        
+        self.controller.draw("friendly", 2)
+        
+        print("[Card 20001] Effect resolved successfully")

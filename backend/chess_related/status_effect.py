@@ -35,7 +35,7 @@ class StatusEffect:
         self.duration = duration
         self.countdown_method = countdown_method
 
-    def decrement_duration(self) -> bool:
+    def decrement_duration(self, amount: int = 1) -> bool:
         """
         Decrement duration if applicable.
 
@@ -43,7 +43,7 @@ class StatusEffect:
             bool: True if the status has expired (duration reached 0)
         """
         if self.duration > -1:
-            self.duration -= 1
+            self.duration -= amount
             return self.duration <= 0
         return False
 

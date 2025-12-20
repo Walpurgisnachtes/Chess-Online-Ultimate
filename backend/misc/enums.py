@@ -13,4 +13,6 @@ class PieceName(StrEnum):
     KNIGHT = "knight"
     ROOK = "rook"
     PAWN = "pawn"
+    REDUCED_BISHOP = "reduced_bishop"
+    REDUCED_ROOK = "reduced_rook"
     UNKNOWN = auto()  # Placeholder for undefined or custom pieces

@@ -51,8 +51,9 @@ Chess Online Ultimate - Chess Page
   <div id="game-container">
     <div id="enemy-area" class="hand-area-wrapper row">
       
-      <div id="enemy-deck-area" class="deck-area col">
-
+      <div id="enemy-info-area" class="d-flex flex-row deck-area col ps-5">
+        <span id="enemy-name"></span>
+        <div id="enemy-prestige-area" class="prestige-area border border-3 border-info">1</div>
       </div>
 
       <div id="enemy-hand-area" class="hand-area col-6">
@@ -64,13 +65,13 @@ Chess Online Ultimate - Chess Page
     <div id="game-board" class="d-flex justify-content-center align-items-center my-4">
       <div class="chessboard-wrapper position-relative">
         
-        <div class="chessboard">
+        <div id="chessboard-core" class="chessboard">
         </div>
 
         <!-- Optional: Turn indicator or game status -->
-        <div class="game-status text-center mt-3">
+        <button id="game-status" class="game-status text-center mt-3 p-4 btn btn-outline-dark text-muted border border-3" disabled>
           <h5 id="turn-player-status" class="mb-0">White to move</h5>
-        </div>
+        </button>
 
         <button id="change-hand-visibility-btn" class="btn btn-outline-primary">
           Press <strong>Here</strong> or [C]<br> to show/hide hands
@@ -80,20 +81,53 @@ Chess Online Ultimate - Chess Page
 
     <div id="player-area" class="hand-area-wrapper row">
       
-      <div id="card-preview" class="card preview-card">
-        <div class="card-body">
-          <h5 class="card-title">Select a Card</h5>
+      <div id="largePreview" class="text-center">
+        <div id="in-game-preview-card" class="card in-game-preview-card collection-card game-card d-inline-block">
+          <div id="previewCostBadge" class="card-cost-badge"></div>
+          <img id="previewImg" src="" class="deck-preview-card-img-top card-img-top">
+          <div class="card-body">
+            <h3 id="previewName" class="card-title"></h3>
+            <p id="previewDesc" class="card-text"></p>
+          </div>
         </div>
       </div>
-      
-      <div id="friendly-deck-area" class="deck-area">
 
+      <div id="friendly-info-area" class="d-flex flex-row-reverse deck-area col ps-5">
+        <div id="friendly-prestige-area" class="prestige-area border border-3 border-info">1</div>
+        <span id="friendly-name"></span>
       </div>
 
       <div id="friendly-hand-area" class="hand-area col-6">
 
       </div>
 
+    </div>
+
+
+    <div id="select-piece-screen" class="opacity-hidden">
+      <button id="submit-selected-piece-btn" class="btn btn-primary">
+          Confirm
+      </button>
+    </div>
+
+    <div class="modal fade" 
+        id="promotion-selection-modal" 
+        tabindex="-1" 
+        aria-labelledby="promotionSelectionModalLabel" 
+        aria-modal="true" 
+        role="dialog">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="promotionSelectionModalLabel">Select Promotion</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body" id="modalBody">
+            <div id="promotion-select-modal-body" class="d-flex flex-row gap-3">
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -103,6 +137,7 @@ Chess Online Ultimate - Chess Page
 
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/chess/chess.js') }}"></script>
 <script src="{{ url_for('static', filename='js/chess/card-generator.js') }}"></script>
 <script src="{{ url_for('static', filename='js/chess/board-generator.js') }}"></script>
 <script src="{{ url_for('static', filename='js/chess/chess-main.js') }}"></script>

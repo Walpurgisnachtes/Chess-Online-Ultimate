@@ -16,7 +16,9 @@ Features:
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import List, Optional
+from uuid import UUID
 
 from chess_related.status_effect import StatusEffect
 from misc.enums import PieceName, StatusCountdownMethod
@@ -57,6 +59,7 @@ class BasePiece:
         self.is_capturable = is_capturable
         self.is_lose_on_capture = is_lose_on_capture
         self.is_removable = is_removable
+        self.uuid: UUID = UUID(int=0)
 
     @property
     def name(self) -> str:
@@ -93,22 +96,22 @@ class BasePiece:
         self.status.append(status)
         return status
 
-    def remove_status(self, name: str, stacks: int = 0) -> int:
+    def remove_status(self, name: str, stacks: int = -1) -> int:
         """
         Remove stacks of a status.
 
         Args:
             name: Status to reduce/remove
-            stacks: Number of stacks to remove (0 = remove all)
+            stacks: Number of stacks to remove (-1 = remove all)
 
         Returns:
-            int: Remaining stacks (0 if fully removed)
+            int: Remaining stacks (-1 if fully removed)
         """
         effect = self.get_status_effect(name)
         if not effect:
             return 0
 
-        if stacks <= 0 or stacks >= effect.stack:
+        if stacks == -1 or stacks >= effect.stack:
             self.status = [s for s in self.status if s.name != name]
             return 0
 
@@ -130,11 +133,47 @@ class BasePiece:
         """Get current stack count of a status (0 if absent)."""
         effect = self.get_status_effect(name)
         return effect.stack if effect else 0
+    
+    # ────────────────────────────── Change PieceType ────────────────────────────── #
+    
+    @classmethod
+    def from_piece_type(cls, piece: "BasePiece") -> "BasePiece":
+        """
+        Create a new piece of type ``cls`` by copying the full runtime state of
+        another ``BasePiece`` instance (color, statuses, UUID, flags, etc.)
+        while adopting the target class’s intrinsic identity (name, move rules).
+
+        Args:
+            piece: The source piece to convert.
+
+        Returns:
+            BasePiece: A new instance of ``cls`` carrying over the source state.
+
+        Raises:
+            TypeError: If ``piece`` is not a ``BasePiece``.
+        """
+        if not isinstance(piece, BasePiece):
+            raise TypeError(
+                f"{cls.__name__}.from_piece_type expected BasePiece, "
+                f"got {type(piece).__name__}"
+            )
+
+        preserved_state = deepcopy(piece.__dict__)
+        preserved_state.pop("_name", None)
+        preserved_state.pop("_move_rule", None)
+        
+        color = preserved_state.get("color", getattr(piece, "color", None))
+        if color is None:
+            raise ValueError("Source piece must define a color before conversion.")
+
+        new_piece = cls(color)
+        new_piece.__dict__.update(preserved_state)
+        return new_piece
 
     # ────────────────────────────── Representation ────────────────────────────── #
 
     def __str__(self) -> str:
-        return self.name.capitalize()
+        return f"{self.name.capitalize()}[uuid={self.uuid}]"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}[{self.color}](name={self.name!r})"

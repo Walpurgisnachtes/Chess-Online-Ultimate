@@ -47,7 +47,23 @@ USERS_FILE = 'users.json'
 LEADERBOARD_FILE = 'leaderboard.json'
 PLAYER_DECK_FILE = 'player_decks.json'
 
-games: Dict[str, Dict[str, Union[str, Board, Player]]] = {}
+games: Dict[str, Dict[str, Union[str, Board, Dict[str, Player], GameController]]] = {}
+
+# Decorators
+def set_event_handler(event_name: str):
+    """
+    Decorator to register a function as an event listener.
+    Usage:
+        @set_event_handler("select")
+        def handle_select_event(data):
+            ...
+    """
+    def decorator(func):
+        global_event_handler.on(event_name, func)
+        return func  # Return the original function (useful if needed elsewhere)
+    return decorator
+
+# Helper functions
 
 def get_full_file_path(dirname: str, filename: str) -> str:
     return os.path.join(os.path.dirname(os.path.dirname(__file__)), dirname, filename)
@@ -112,6 +128,18 @@ def change_json_card_id_list_into_card_object(card_ids: List[str]) -> List[Card]
             return []
     return card_list
 
+def change_card_objects_into_json_card_object(cards: List[Card]) -> List[Dict[str, str]]:
+    return [
+        {
+            "name": card.name,
+            "description": card.desc,
+            "img": card.img,
+            "cost": card.cost,
+            "type": card.type,
+            "id": card.id
+        } for card in cards
+    ]
+
 def change_json_system_object_into_system_id(system: Any) -> str:
     return system["id"]
 
@@ -152,8 +180,10 @@ def server_start():
         card_obj = Card(
             name=card['name'],
             id=card['id'],
+            img=card['img'],
             desc=card.get('description', 'No description'),
-            cost=int(card.get('cost') or 0)  # safe int conversion
+            cost=int(card.get('cost') or 0),  # safe int conversion
+            type=card.get('type', 'attack')
         )
         card_objects.append(card_obj)
         
@@ -162,6 +192,7 @@ def server_start():
         system_obj = System(
             name=system['name'],
             id=system['id'],
+            img=system['img'],
             desc=system.get('description', 'No description')
         )
         system_objects.append(system_obj)
@@ -474,9 +505,13 @@ def on_join(data):
         black_player = game['players']['black']
         
         game['controller'] = GameController(
+            room=room,
             board=board, 
-            players={"white": white_player, "black": black_player}
+            players={"white": white_player, "black": black_player},
+            event_handler=global_event_handler
         )
+        
+        game['controller'].game_start()
 
         # Notify both players
         emit('start', {
@@ -502,74 +537,205 @@ def on_get_client_game_data(data):
 
     username = session['username']
     room = session['room']
+
+    if not room or room not in games:
+        emit("error", {'msg': "Session expired. Please log in again."}, to=sid)
+        disconnect()
+        return
     
-    current_player_deck = get_active_deck_details(username)
+    game = games[room]
+
+    white_player: Player = game['players']['white']
+    black_player: Player = game['players']['black']
     
-    if not current_player_deck:
-        emit("error", {'msg': "No active deck selected. Please select one in Deck Builder."}, to=sid)
+    players_by_username = {
+        white_player.username: white_player,
+        black_player.username: black_player
+    }
+
+    requesting_player = players_by_username.get(username)
+    if not requesting_player:
+        emit("error", {'msg': "Session expired. Please log in again."}, to=sid)
         disconnect()
         return
 
+    # Determine enemy automatically
+    requesting_enemy_player = white_player if requesting_player is black_player else black_player
+    
+    requesting_player_hand = change_card_objects_into_json_card_object(requesting_player.hand)
+    requesting_player_prestige = requesting_player.prestige
+    requesting_enemy_hand_count = len(requesting_enemy_player.hand)
+    requesting_enemy_prestige = requesting_enemy_player.prestige
+
     emit("client_game_data_got", {
-        "friendlyHand": current_player_deck["system"],
-        "enemyHandCount": current_player_deck["deck"]
+        "friendlyName": requesting_player.username,
+        "friendlyHand": requesting_player_hand,
+        "friendlyPrestige": requesting_player_prestige,
+        "enemyName": requesting_enemy_player.username,
+        "enemyHandCount": requesting_enemy_hand_count,
+        "enemyPrestige": requesting_enemy_prestige
     }, to=sid)
 
-# Bridge: Controller → Frontend (open selector UI)
-def handle_select_event(data):
-    room = data['room']
-    
-    emit("open_selector", {
-        "predicate": data['predicate'],
-        "current_player": data['current_player']
-    }, room=room)
-    
-# Bridge: Frontend → Controller
+@socketio.on('played_card')
+def on_card_try_played(data):
+    """
+    Frontend tells server: "Player wants to play a card from hand[index]"
+    """
+    played_card_index = data.get('played_card_in_hand_index')
+    if played_card_index is None:
+        return
+
+    sid = request.sid
+    username = session.get('username')
+    if not username:
+        emit("error", {"msg": "Not logged in"}, to=sid)
+        return
+
+    room = session.get('room')
+    if not room or room not in games:
+        emit("error", {"msg": "Invalid room"}, to=sid)
+        return
+
+    game = games[room]
+    controller = game.get('controller')
+    if not controller:
+        emit("error", {"msg": "Game not started yet"}, to=sid)
+        return
+
+    # Find which player is trying to play
+    current_player_color = controller.current_player
+    current_player_obj = game['players'].get(current_player_color)
+
+    if current_player_obj.sid != sid:
+        emit("message", {"msg": "It's not your turn!"}, to=sid)
+        return
+
+    # Ask controller to validate and play the card
+    success = controller.try_play_card_with_index_in_hand(played_card_index)
+
+    if not success:
+        emit("reject_play_card", {"msg": "Cannot play this card"}, to=sid)
+
 @socketio.on('chosen_by_selector')
 def on_chosen_by_selector(data):
-    room = data.get('room')
+    room = session.get('room')
+    sid = request.sid
     selected = data.get('selected')
 
-    if room not in games:
+    if not room or room not in games:
+        emit("error", {"msg": "Invalid room"}, to=sid)
         return
 
     controller: GameController = games[room].get('controller')
+    print(selected)
     if controller:
         # Forward to controller (resolves waiting select())
         controller.resolve_selection(selected)
 
 @socketio.on('make_move')
 def on_make_move(data):
-    room = data['room']
     move_data = data['move']
-    if room not in games:
-        return
-    game = games[room]
     sid = request.sid
-    for col, s in game['players'].items():
-        if s == sid:
-            color = col
-            break
-    else:
-        return
-    turn_color = 'white' if game['turn'] == 'w' else 'black'
-    opponent_color = 'black' if game['turn'] == 'w' else 'white'
-    if color != turn_color:
-        emit('message', {'msg': 'Not your turn'}, to=sid)
+
+    room = session.get('room')
+
+    if not room or room not in games:
+        emit("error", {"msg": "Invalid room"}, to=sid)
         return
     
-    promotion = None
-    is_opponent_in_check = False
-    success = True
+    game = games[room]
+    controller: GameController = game.get("controller")
     
-    emit('move_made', {
-        'move': {
+    # Find which player is trying to play
+    current_player_color = controller.current_player
+    current_player_obj = game['players'].get(current_player_color)
+
+    if current_player_obj.sid != sid:
+        emit("error", {"msg": "It's not your turn!"}, to=sid)
+        return
+    
+    print("Received move request!", move_data)
+    
+    promotion = move_data["promotion"]
+    move_result = controller.move_piece({
             'from': move_data['from'],
             'to': move_data['to'],
             'promotion': promotion,
-            'success': success
-        }
+    })
+    success = move_result["success"]
+    en_passant = move_result["en_passant"]
+    win = move_result["win"]
+    
+    if win:
+        emit('move_made', {
+            'move': {
+                'from': move_data['from'],
+                'to': move_data['to'],
+                'promotion': promotion,
+                'en_passant': en_passant,
+                'success': success
+            }
+        }, room=room)
+        emit('game_over', {
+            'winner': current_player_color,
+            'msg': f'{current_player_obj.username} wins!'
+        }, room=room)
+        del games[room]
+    elif success:
+        emit('move_made', {
+            'move': {
+                'from': move_data['from'],
+                'to': move_data['to'],
+                'promotion': promotion,
+                'en_passant': en_passant,
+                'success': success
+            }
+        }, room=room)
+    else :
+        emit('move_fails', {
+            'move': {
+                'from': move_data['from'],
+                'to': move_data['to'],
+                'promotion': promotion,
+                'en_passant': en_passant,
+                'success': success
+            }
+        }, to=sid)
+
+@socketio.on('request_turn_end')
+def on_turn_end(data):
+    sid = request.sid
+    username = session.get('username')
+    if not username:
+        emit("error", {"msg": "Not logged in"}, to=sid)
+        return
+
+    room = session.get('room')
+    if not room or room not in games:
+        emit("error", {"msg": "Invalid room"}, to=sid)
+        return
+
+    game = games[room]
+    controller = game.get('controller')
+    if not controller:
+        emit("error", {"msg": "Game not started yet"}, to=sid)
+        return
+
+    # Find which player is trying to play
+    current_player_color = controller.current_player
+    current_player_obj = game['players'].get(current_player_color)
+
+    if current_player_obj.sid != sid:
+        emit("message", {"msg": "It's not your turn!"}, to=sid)
+        return
+    
+    controller.turn_end()
+    
+    emit("turn_end", {
+        "current_color": controller.current_player
     }, room=room)
+    
+    controller.turn_start()
 
 @socketio.on('resign')
 def on_resign(data):
@@ -651,6 +817,125 @@ def on_disconnect():
 
     # Optional: clear session room
     session.pop('room', None)
+
+# Event listening bridges
+
+# Bridge: open selector UI
+@set_event_handler("select")
+def handle_select_event(data):
+    room = data['room']
+    
+    if not room or room not in games:
+        return None
+    
+    game = games[room]
+    controller: GameController = game["controller"]
+    player = controller.players.get(controller.current_player)
+    
+    if not player:
+        return None
+    
+    sid = player.sid
+    
+    emit("open_selector", {
+        "select_type": data["select_type"],
+        "select_from_item": data["select_from_item"],
+        "min": data["min"],
+        "max": data["max"],
+        "current_player": data["current_player"]
+    }, to=sid)
+
+# Bridge: send chess piece placement signal
+@set_event_handler("place_piece")
+def handle_piece_placement_event(data):
+    room = data['room']
+    
+    if not room or room not in games:
+        return None
+    
+    emit("place_piece", {
+        "piece": data["piece"],
+        "color": data["color"],
+        "position": data["position"]
+    }, room=room)
+
+# Bridge: send chess piece removal signal
+@set_event_handler("remove_piece")
+def handle_piece_removal_event(data):
+    room = data['room']
+    
+    if not room or room not in games:
+        return None
+    
+    emit("remove_piece", {
+        "position": data['position']
+    }, room=room)
+
+
+# Bridge: validate card playing
+@set_event_handler("card_play_accepted")
+def handle_card_play_accepted(data):
+    room = data['room']
+    
+    if not room or room not in games:
+        return None
+    
+    emit("accept_play_card", {
+        "card_id": data['card_id'],
+        "player_color": data['player_color'],
+        "hand_index": data['hand_index']
+    }, room=room)
+
+# Bridge: update both side's hand
+@set_event_handler("update_hand")
+def handle_hand_updated(data):
+    room = data.get('room')
+
+    # 1. Early exit with clear conditions
+    if not room or room not in games:
+        return None
+    
+    game = games.get(room)
+
+    controller: GameController = game["controller"]
+    white = controller.players.get(controller.PLAYER_COLOR_WHITE)
+    black = controller.players.get(controller.PLAYER_COLOR_BLACK)
+
+    if not (white and black):
+        return None
+
+    # 2. Define the hands mapping
+    hands = {
+        "white": data.get("white_hand", []),
+        "black": data.get("black_hand", [])
+    }
+
+    # 3. Create a configuration for targeted emits
+    # Each entry: (Target Player SID, Friendly Hand, Enemy Hand Count)
+    update_configs = [
+        (white.sid, change_card_objects_into_json_card_object(hands["white"]), len(hands["black"])),
+        (black.sid, change_card_objects_into_json_card_object(hands["black"]), len(hands["white"]))
+    ]
+
+    # 4. Execute emissions
+    for sid, friendly_hand, enemy_count in update_configs:
+        emit("update_hand", {
+            "friendlyHand": friendly_hand,
+            "enemyHandCount": enemy_count
+        }, to=sid)
+
+# Bridge: update both side's prestige
+@set_event_handler("update_prestige")
+def handle_prestige_updated_event(data):
+    room = data['room']
+    
+    if not room or room not in games:
+        return None
+    
+    emit("update_prestige", {
+        "white": data["white"],
+        "black": data["black"],
+    }, room=room)
 
 if __name__ == '__main__':
     server_start()

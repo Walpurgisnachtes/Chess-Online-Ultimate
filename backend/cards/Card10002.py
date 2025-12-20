@@ -14,24 +14,24 @@ from controller import GameController
 
 from controller_related.event_controller import EventHandler
 
-class Card10001:
+class Card10002:
     """
-    Card ID: 10001
-    Description: "Select and *Remove* 1 enemy pawn or *minor piece*."
+    Card ID: 10002
+    Description: "*Remove* a piece who is the only one in its column."
     """
 
     def __init__(self, controller: GameController):
         self.controller = controller
 
     def exec(self):
-        print("[Card 10001] Execution started: Select and remove 1 enemy pawn or minor piece")
+        print("[Card 10002] Execution started: *Remove* a piece who is the only one in its column.")
 
         # Define the selection predicate
         predicate = {
             "type": "piece",
             "filter": {
-                "color": "enemy",           # Enemy relative to current player
-                "piece_type": ["PawnPiece", "KnightPiece", "BishopPiece"]
+                "color": "all",
+                "custom": ["only_of_column"]
             },
             "min": 1,
             "max": 1,
@@ -43,29 +43,20 @@ class Card10001:
 
         # If no valid selection (timeout, cancel, no targets, or room closed)
         if not selected:
-            print("[Card 10001] No valid target selected → effect fizzles")
+            print("[Card 10002] No valid target selected → effect fizzles")
             return
 
         piece_pos_square = selected[0]
         target_piece = self.controller.board.get_piece_at_square(piece_pos_square)
 
         if not target_piece:
-            print("[Card 10001] Selected piece no longer exists → effect fizzles")
-            return
-
-        # Validate again (in case board changed during selection delay)
-        if target_piece.color == self.controller.current_player:
-            print("[Card 10001] Selected own piece → invalid")
-            return
-
-        if not isinstance(target_piece, (PawnPiece, KnightPiece, BishopPiece)):
-            print("[Card 10001] Selected piece is not pawn/knight/bishop → invalid")
+            print("[Card 10002] Selected piece no longer exists → effect fizzles")
             return
 
         # Execute removal
-        print(f"[Card 10001] Removing enemy {target_piece.name} at {piece_pos_square}")
+        print(f"[Card 10002] Removing {target_piece.name} at {piece_pos_square}")
 
         # Permanently remove from board (no graveyard)
         self.controller.remove_piece(selected)
 
-        print("[Card 10001] Effect resolved successfully")
+        print("[Card 10002] Effect resolved successfully")

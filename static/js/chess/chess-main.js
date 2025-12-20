@@ -1,13 +1,19 @@
 // static/js/chess-main.js
 
 async function waitForLogin() {
+  let i = 0;
   while (true) {
+    if (i >= 5) {
+      await modal.messageOnly("You are disconnected!");
+      window.location.href = "/login";
+    }
     const res = await fetch("/api/session");
     const data = await res.json();
     if (data.logged_in) {
       return data.username;
     }
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 200 * 2 ** i));
+    i += 1;
   }
 }
 
@@ -19,7 +25,13 @@ class ChessLogicLocalController {
     this.game = new Chess();
     this.selectedSquare = null;
     this.myColor = null;
-    this.in_check = false;
+    this.is_moved = false;
+    this.is_hand_hidden = false;
+
+    this.isChoosingPiece = false;
+    this.chosenPieces = [];
+    this.minChosenPiece = 0;
+    this.maxChosenPiece = 0;
   }
 
   async init() {
@@ -43,14 +55,14 @@ class ChessLogicLocalController {
       console.log("waiting...");
     });
 
-    this.socket.on("client_game_data_got", async (clientData) => {
-      const cardDataArray = clientData.friendlyHand;
-      const enemyHandCount = clientData.enemyHandCount;
+    this.socket.on("client_game_data_got", async (data) => {
+      const cardDataArray = data.friendlyHand;
+      const enemyHandCount = data.enemyHandCount;
       if (_.isArray(cardDataArray)) {
+        this.setPlayerName(data.friendlyName, data.enemyName);
         CardGenerationHelper.generateHandCards(cardDataArray);
         CardGenerationHelper.generateEnemyHandCards(enemyHandCount);
-
-        BoardGenerationHelper.generateChessBoard(); // Empty grid
+        this.updatePrestige(data.friendlyPrestige, data.enemyPrestige);
       } else {
         await this.disconnect("Session expired. Please log in again.");
       }
@@ -58,35 +70,152 @@ class ChessLogicLocalController {
 
     this.socket.on("start", async (data) => {
       await this.socket.emit("get_client_game_data", {});
-      this.startGame();
+      this.startGame(data);
+    });
+
+    this.socket.on("move_fails", async (data) => {
+      console.log("move fails?", data);
     });
 
     this.socket.on("move_made", async (data) => {
+      `
+      'move': {
+        'from': move_data['from'],
+        'to': move_data['to'],
+        'promotion': promotion,
+        'en_passant': en_passant,
+        'success': success
+      }
+      `;
+
       const move = data.move;
 
       // Critical: Check if the move was successful on the server
       if (!move.success) {
         await this.disconnect("Session expired. Please log in again.");
+        return;
       }
 
-      // Valid move — proceed with animation and update
-      this.in_check = move.enemy_in_check || false;
-
+      const { from, to, promotion, en_passant, success } = move;
+      this.is_moved = true;
       // Animate the move
-      await BoardGenerationHelper.animatePieceMove(
-        move.from,
-        move.to,
-        move.promotion || null,
-        this.game.turn() === "w" ? "w" : "b" // color of the piece that just moved
-      );
+      // await BoardGenerationHelper.animatePieceMove(
+      //   move.from,
+      //   move.to,
+      //   move.promotion || null,
+      //   this.game.turn() === "w" ? "w" : "b" // color of the piece that just moved
+      // );
 
-      // Update internal game state and re-render board
-      this.game.load(data.fen); // assuming server still sends fen
+      // Update internal state
+      const fromPiece = this.game.get(from);
+
+      this.game.remove(from);
+      if (en_passant) {
+        this.game.remove(en_passant);
+      }
+
+      this.game.put(fromPiece, to);
+
       BoardGenerationHelper.render(this.game);
       this.updateTurnStatus();
       BoardGenerationHelper.clearHighlights();
+      this.selectedSquare = null;
+    });
 
-      this.selectedSquare = null; // reset selection
+    this.socket.on("place_piece", async (data) => {
+      // data { name: "knight"}
+      const pieceName = data.piece;
+      const pieceColor = data.color === "white" ? "w" : "b";
+      const positions = data.position;
+      const pieceNameMapper = {
+        pawn: "p",
+        knight: "n",
+        bishop: "b",
+        rook: "r",
+        queen: "q",
+        king: "k",
+      };
+
+      _.forEach(positions, async (sq) => {
+        const type = pieceNameMapper[pieceName];
+        if (!type) {
+          this.disconnect("Session expired. Please log in again.");
+          return;
+        }
+        const color = pieceColor;
+        this.game.put({ type, color }, sq);
+      });
+
+      BoardGenerationHelper.render(this.game);
+      BoardGenerationHelper.clearHighlights();
+    });
+
+    this.socket.on("remove_piece", async (data) => {
+      const squares = data.position;
+      _.forEach(squares, (sq) => {
+        this.game.remove(sq);
+      });
+
+      BoardGenerationHelper.render(this.game);
+      BoardGenerationHelper.clearHighlights();
+    });
+
+    this.socket.on("turn_end", async (data) => {
+      console.log(`Turn end. Now is ${data.current_color} side's turn`);
+      this.game.setTurn(data.current_color); // Simplified
+      this.is_moved = false;
+      this.updateTurnStatus();
+    });
+
+    this.socket.on("open_selector", async (data) => {
+      `
+      {
+        "select_type": data["select_type"],
+        "select_from_item": data["select_from_item"],
+        "min": data["min"],
+        "max": data["max"],
+        "current_player": data["current_player"]
+      }
+      `;
+      this.resetChosenPieces();
+
+      this.changeHandVisibility("hidden");
+
+      if (data.select_type == "card") {
+      } else if (data.select_type == "piece") {
+        this.isChoosingPiece = true;
+        this.chosenPieces = [];
+        this.minChosenPiece = _.toInteger(data.min);
+        this.maxChosenPiece = _.toInteger(data.max);
+        BoardGenerationHelper.show_select_piece_screen(data.select_from_item);
+      }
+    });
+
+    this.socket.on("accept_play_card", async (data) => {
+      this.updateTurnStatus();
+    });
+
+    this.socket.on("update_hand", async (data) => {
+      const cardDataArray = data.friendlyHand;
+      const enemyHandCount = data.enemyHandCount;
+      if (_.isArray(cardDataArray)) {
+        CardGenerationHelper.generateHandCards(cardDataArray);
+        CardGenerationHelper.generateEnemyHandCards(enemyHandCount);
+      } else {
+        await this.disconnect("Session expired. Please log in again.");
+      }
+    });
+
+    this.socket.on("update_prestige", async (data) => {
+      const enemyColor = this.myColor == "white" ? "black" : "white";
+      this.updatePrestige(data[this.myColor], data[enemyColor]);
+    });
+
+    this.socket.on("turn_end", async (data) => {
+      console.log(`Turn end. Now is ${data.current_color} side's turn`);
+      this.setTurn(data.current_color);
+      this.is_moved = false;
+      this.updateTurnStatus();
     });
 
     this.socket.on("game_over", async (data) => {
@@ -103,8 +232,10 @@ class ChessLogicLocalController {
     });
   }
 
-  startGame() {
+  startGame(data) {
     this.myColor = data.color;
+
+    BoardGenerationHelper.generatePromotionScreen(this.myColor);
 
     const waitingScreen = document.getElementById("waiting-screen");
     if (waitingScreen) {
@@ -120,12 +251,65 @@ class ChessLogicLocalController {
       gameScreen.style.display = "block";
     }
 
+    const changeHandVisibilityBtn = gameScreen.querySelector(
+      "#change-hand-visibility-btn"
+    );
+    changeHandVisibilityBtn.addEventListener("click", () =>
+      this.changeHandVisibility()
+    );
+    document.addEventListener("keyup", (event) => {
+      if (event.key === "c") this.changeHandVisibility();
+    });
+
+    const turnSwitcher = document.getElementById("game-status");
+    turnSwitcher.addEventListener("click", async (e) => {
+      console.log(turnSwitcher, turnSwitcher.disabled);
+      if (turnSwitcher.disabled) return;
+      await this.socket.emit("request_turn_end", {});
+    });
+
+    const choosePieceConfirmBtn = document.getElementById(
+      "submit-selected-piece-btn"
+    );
+    choosePieceConfirmBtn.addEventListener("click", async () => {
+      const chosenPieceLength = this.chosenPieces.length;
+      if (
+        this.isChoosingPiece &&
+        chosenPieceLength >= this.minChosenPiece &&
+        chosenPieceLength <= this.maxChosenPiece
+      ) {
+        await this.socket.emit("chosen_by_selector", {
+          selected: this.chosenPieces,
+        });
+        this.changeHandVisibility("show");
+        this.resetChosenPieces();
+        BoardGenerationHelper.hide_select_piece_screen();
+      }
+    });
+
+    window.addEventListener("playCard", (e) => {
+      this.playCard(e.detail.cardIdInHand);
+    });
+
     this.game.load(
       data.fen || "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
     );
     BoardGenerationHelper.render(this.game);
     this.updateTurnStatus();
     this.attachSquareClicks();
+  }
+
+  setPlayerName(friendlyName, enemyName) {
+    const friendlyNameEl = document.getElementById("friendly-name");
+    const enemyNameEl = document.getElementById("enemy-name");
+
+    friendlyNameEl.textContent = friendlyName;
+    enemyNameEl.textContent = enemyName;
+  }
+
+  setTurn(color) {
+    // This is now just a pass-through to the game object
+    this.game.setTurn(color);
   }
 
   setRoomName() {
@@ -141,21 +325,81 @@ class ChessLogicLocalController {
     console.log("joined");
   }
 
+  changeHandVisibility(status = "toggle") {
+    const hideHand = () => {
+      const handWrappers = document.querySelectorAll(".hand-area-wrapper");
+      _.forEach(handWrappers, (e) => {
+        e.classList.add("hidden");
+      });
+      this.is_hand_hidden = true;
+    };
+
+    const showHand = () => {
+      const handWrappers = document.querySelectorAll(".hand-area-wrapper");
+      _.forEach(handWrappers, (e) => {
+        e.classList.remove("hidden");
+      });
+      this.is_hand_hidden = false;
+    };
+
+    switch (status) {
+      case "toggle":
+        this.is_hand_hidden ? showHand() : hideHand();
+        break;
+      case "hidden":
+        hideHand();
+        break;
+      case "show":
+        showHand();
+      default:
+        break;
+    }
+  }
+
+  resetChosenPieces() {
+    this.isChoosingPiece = false;
+    this.chosenPieces = [];
+    this.minChosenPiece = 0;
+    this.maxChosenPiece = 0;
+  }
+
+  playCard(cardIdInHand) {
+    console.log(`I will play card ${cardIdInHand}`);
+    this.socket.emit("played_card", {
+      played_card_in_hand_index: cardIdInHand,
+    });
+  }
+
   attachSquareClicks() {
     document.querySelectorAll(".square").forEach((square) => {
       square.onclick = (e) => this.handleSquareClick(e);
     });
   }
 
-  handleSquareClick(event) {
+  // TODO: Promotion Logic
+  async handleSquareClick(event) {
     const square = event.currentTarget;
     const row = parseInt(square.dataset.row);
     const col = parseInt(square.dataset.col);
-    const squareName = String.fromCharCode(97 + col) + (8 - row);
+    const squareName = BoardGenerationHelper.coordsToAlgebraic(row, col);
 
-    if (this.game.turn() !== this.myColor[0]) return;
+    if (this.game.turn() !== this.myColor[0] && !this.isChoosingPiece) return;
 
-    if (this.selectedSquare) {
+    if (this.isChoosingPiece) {
+      if (this.game.get(squareName)) {
+        if (_.includes(this.chosenPieces, squareName)) {
+          _.pull(this.chosenPieces, squareName);
+        } else if (this.chosenPieces.length < this.maxChosenPiece) {
+          this.chosenPieces.push(squareName);
+        }
+        BoardGenerationHelper.clearHighlights();
+        _.forEach(this.chosenPieces, (squareNameChosen) => {
+          const { row, col } =
+            BoardGenerationHelper.algebraicToCoords(squareNameChosen);
+          BoardGenerationHelper.highlightSquare(row, col);
+        });
+      }
+    } else if (this.selectedSquare) {
       let promotion = null;
       const piece = this.game.get(this.selectedSquare);
       if (piece?.type === "p") {
@@ -168,7 +412,11 @@ class ChessLogicLocalController {
         }
       }
 
-      this.socket.emit("make_move", {
+      console.log(
+        `Requested Move: from: ${this.selectedSquare} to: ${squareName} promotion: ${promotion}`
+      );
+
+      await this.socket.emit("make_move", {
         move: { from: this.selectedSquare, to: squareName, promotion },
       });
 
@@ -184,19 +432,29 @@ class ChessLogicLocalController {
     }
   }
 
+  updatePrestige(friendlyPrestige, enemyPrestige) {
+    const myPrestigeEl = document.getElementById("friendly-prestige-area");
+    const enemyPrestigeEl = document.getElementById("enemy-prestige-area");
+
+    myPrestigeEl.textContent = friendlyPrestige;
+    enemyPrestigeEl.textContent = enemyPrestige;
+  }
+
   updateTurnStatus() {
-    if (!document.getElementById("turn-status")) return;
-    const turnText =
-      this.game.turn() === this.myColor[0] ? "Your turn" : "Opponent's turn";
-    const checkText = this.in_check
-      ? " <span class='text-danger fw-bold'>(CHECK!)</span>"
-      : "";
-    document.getElementById("turn-status").innerHTML = turnText + checkText;
+    const turnStatus = document.getElementById("game-status");
+    if (!turnStatus) return;
+    const turnPlayerStatus = turnStatus.querySelector("#turn-player-status");
+    const isMyTurn = this.game.turn() === this.myColor[0];
+    const turnText = isMyTurn
+      ? `${isMyTurn && this.is_moved ? "Press to End Turn" : "Your turn"}`
+      : "Opponent's turn";
+    turnPlayerStatus.innerHTML = turnText;
+    turnStatus.disabled = !isMyTurn || !this.is_moved;
   }
 
   async disconnect(msg) {
     await modal.error(msg);
-    window.location.href = "/login";
+    //window.location.href = "/login";
   }
 }
 
