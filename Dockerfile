@@ -22,4 +22,4 @@ COPY . .
 
 # 啟動命令：使用 Gunicorn 搭配 eventlet 驅動程式以支援 SocketIO
 # 假設你的主程式檔案是 app.py，且 Flask 實例名為 app
-CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0${PORT}", "app:app"]
+CMD ["gunicorn", "--worker-class", "eventlet", "-w", "1", "--bind", "0.0.0.0${PORT}", "backend.app:app"]

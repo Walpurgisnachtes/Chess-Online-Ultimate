@@ -163,6 +163,7 @@ def server_start():
     Loads all cards from localization files and registers them globally.
     Prints all loaded cards for verification.
     """
+    init_files()
     # 1. Load raw data
     raw_cards_data = get_data_with_localization("en", localized_text.get_cards)
     cards_data = list(raw_cards_data.values())
