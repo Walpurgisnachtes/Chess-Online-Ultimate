@@ -43,7 +43,7 @@ class CardGenerator {
         <div class="card-cost-badge">${data.cost}</div>
         ${
           data.img
-            ? `<img src="${data.img}" class="friendly-card-img-top card-img-top" loading="lazy" draggable="false">`
+            ? `<img src="${IMAGE_BASE_URL + data.img}" class="friendly-card-img-top card-img-top" loading="lazy" draggable="false">`
             : ""
         }
         <div class="card-body py-0">
@@ -60,7 +60,7 @@ class CardGenerator {
 
       const previewHTML = `
         <div id="previewCostBadge" class="card-cost-badge">${data.cost}</div>
-          <img id="previewImg" src="${data.img}" class="in-game-preview-card-img-top card-img-top" draggable="false">
+          <img id="previewImg" src="${IMAGE_BASE_URL + data.img}" class="in-game-preview-card-img-top card-img-top" draggable="false">
           <div class="card-body">
             <h3 id="previewName" class="card-title">${data.name}</h3>
             <p id="previewDesc" class="card-text">${description}</p>

@@ -39,7 +39,10 @@ class ChessLogicLocalController {
 
     BoardGenerationHelper.generateChessBoard();
 
-    this.socket = io();
+    this.socket = io({
+      transports: ["websocket", "polling"],
+      upgrade: true
+    });
     this.bindSocketIOEvents();
 
     this.setRoomName();

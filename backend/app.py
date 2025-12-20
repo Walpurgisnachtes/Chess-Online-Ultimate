@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from flask_socketio import SocketIO, join_room, emit, disconnect
 from copy import deepcopy
@@ -22,12 +25,13 @@ from player_related.player import Player
 from controller import GameController
 
 # Directories
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSS_DIR = os.path.join("static", "css")
 IMG_DIR = os.path.join("static", "img")
 JS_DIR = os.path.join("static", "js")
 TEMP_DIR = "templates"
 DATABASE_DIR = os.path.join("database", "website")
+
 
 
 app = Flask(
@@ -37,7 +41,7 @@ app = Flask(
 )
 app.json.sort_keys = False
 app.secret_key = secrets.token_bytes(32)
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='eventlet')
 
 global_event_handler = EventHandler()
 
@@ -66,7 +70,7 @@ def set_event_handler(event_name: str):
 # Helper functions
 
 def get_full_file_path(dirname: str, filename: str) -> str:
-    return os.path.join(os.path.dirname(os.path.dirname(__file__)), dirname, filename)
+    return os.path.join(BASE_DIR, dirname, filename)
 
 def init_files():
     if not os.path.exists(get_full_file_path(DATABASE_DIR, USERS_FILE)):
@@ -163,6 +167,7 @@ def server_start():
     Loads all cards from localization files and registers them globally.
     Prints all loaded cards for verification.
     """
+    init_files()
     # 1. Load raw data
     raw_cards_data = get_data_with_localization("en", localized_text.get_cards)
     cards_data = list(raw_cards_data.values())
@@ -937,6 +942,8 @@ def handle_prestige_updated_event(data):
         "black": data["black"],
     }, room=room)
 
+# 在模組載入時自動執行 server_start()
+server_start()
+
 if __name__ == '__main__':
-    server_start()
     socketio.run(app, host='0.0.0.0', debug=True)

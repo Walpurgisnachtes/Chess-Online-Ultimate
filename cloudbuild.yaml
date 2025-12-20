@@ -1,0 +1,32 @@
+steps:
+  # 步驟 1: 建置 Docker 映像檔
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/chess-ultimate', '.']
+
+  # 步驟 2: 推送映像檔到 Google Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', 'gcr.io/$PROJECT_ID/chess-ultimate']
+
+  # 步驟 3: 部署到 Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'chess-online-ultimate'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/chess-ultimate'
+      - '--region'
+      - 'asia-east1'
+      - '--allow-unauthenticated'
+      - '--session-affinity'
+      - '--max-instances'
+      - '1'
+      - '--timeout'
+      - '3600'
+      - '--port'
+      - '8080'
+
+# 核心修正：解決你遇到的日誌權限報錯
+options:
+  logging: CLOUD_LOGGING_ONLY

@@ -215,7 +215,7 @@ class ChessBoardGenerator {
         const img = document.createElement("img");
         const typeName = this.pieceNames[piece.type];
         const colorSide = piece.color === "w" ? "white" : "black";
-        img.src = `/static/img/piece/${typeName}_${colorSide}.png`;
+        img.src = IMAGE_BASE_URL + `/piece/${typeName}_${colorSide}.png`;
         img.className = "piece";
         img.draggable = false;
         squareEl.appendChild(img);

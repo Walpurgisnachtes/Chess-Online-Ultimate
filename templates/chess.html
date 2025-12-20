@@ -5,22 +5,10 @@ Chess Online Ultimate - Chess Page
 {% endblock %}
 
 {% block css %}
-<link
-  rel="stylesheet"
-  href="{{ url_for('static', filename='css/non-scrollable.css') }}"
-/>
-<link
-    rel="stylesheet"
-    href="{{ url_for('static', filename='css/cards.css') }}"
-/>
-<link
-    rel="stylesheet"
-    href="{{ url_for('static', filename='css/chess-board.css') }}"
-/>
-<link
-    rel="stylesheet"
-    href="{{ url_for('static', filename='css/chess-page.css') }}"
-/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/css/non-scrollable.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/css/cards.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/css/chess-board.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/css/chess-page.css">
 {% endblock %}
 
 {% block content %}
@@ -137,8 +125,8 @@ Chess Online Ultimate - Chess Page
 
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/chess/chess.js') }}"></script>
-<script src="{{ url_for('static', filename='js/chess/card-generator.js') }}"></script>
-<script src="{{ url_for('static', filename='js/chess/board-generator.js') }}"></script>
-<script src="{{ url_for('static', filename='js/chess/chess-main.js') }}"></script>
+<script src="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/js/chess/chess.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/js/chess/card-generator.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/js/chess/board-generator.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/js/chess/chess-main.js"></script>
 {% endblock %}
