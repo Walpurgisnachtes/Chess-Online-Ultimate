@@ -72,7 +72,7 @@
 
 /* Friendly Card Styling */
 .friendly-card {
-  bottom: 10px;
+  bottom: 35px;
 
   /* The Fan Physics */
   transform-origin: 50% var(--fan-pivot-y);
@@ -87,7 +87,7 @@
 /* Subtle highlight on hover (Optional: shows which card is active without moving it) */
 .friendly-card:hover {
   filter: brightness(1.1);
-  bottom: 30px;
+  bottom: 55px;
   /* transform-origin: 100% var(--fan-pivot-y); */
 }
 

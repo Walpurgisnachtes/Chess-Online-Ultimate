@@ -49,6 +49,25 @@
   z-index: 801;
 }
 
+.prestige-area {
+  position: absolute;
+  height: 4rem;
+  width: 4rem;
+  text-align: center;
+  align-content: center;
+  top: -7%;
+  font-weight: bold;
+  font-size: 2rem;
+}
+
+.prestige-area#enemy-prestige-area {
+  left: 10%;
+}
+
+.prestige-area#friendly-prestige-area {
+  right: 10%;
+}
+
 @media (max-height: 800px) {
   #change-hand-visibility-btn {
     top: 0%;
@@ -57,5 +76,17 @@
   .game-status {
     top: 80%;
     left: -68%;
+  }
+
+  .prestige-area {
+    top: -20%;
+  }
+
+  .prestige-area#enemy-prestige-area {
+    left: 15%;
+  }
+
+  .prestige-area#friendly-prestige-area {
+    right: 15%;
   }
 }

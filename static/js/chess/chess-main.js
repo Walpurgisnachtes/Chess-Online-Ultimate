@@ -59,8 +59,10 @@ class ChessLogicLocalController {
       const cardDataArray = data.friendlyHand;
       const enemyHandCount = data.enemyHandCount;
       if (_.isArray(cardDataArray)) {
+        this.setPlayerName(data.friendlyName, data.enemyName);
         CardGenerationHelper.generateHandCards(cardDataArray);
         CardGenerationHelper.generateEnemyHandCards(enemyHandCount);
+        this.updatePrestige(data.friendlyPrestige, data.enemyPrestige);
       } else {
         await this.disconnect("Session expired. Please log in again.");
       }
@@ -204,6 +206,11 @@ class ChessLogicLocalController {
       }
     });
 
+    this.socket.on("update_prestige", async (data) => {
+      const enemyColor = this.myColor == "white" ? "black" : "white";
+      this.updatePrestige(data[this.myColor], data[enemyColor]);
+    });
+
     this.socket.on("turn_end", async (data) => {
       console.log(`Turn end. Now is ${data.current_color} side's turn`);
       this.setTurn(data.current_color);
@@ -290,6 +297,14 @@ class ChessLogicLocalController {
     BoardGenerationHelper.render(this.game);
     this.updateTurnStatus();
     this.attachSquareClicks();
+  }
+
+  setPlayerName(friendlyName, enemyName) {
+    const friendlyNameEl = document.getElementById("friendly-name");
+    const enemyNameEl = document.getElementById("enemy-name");
+
+    friendlyNameEl.textContent = friendlyName;
+    enemyNameEl.textContent = enemyName;
   }
 
   setTurn(color) {
@@ -415,6 +430,14 @@ class ChessLogicLocalController {
         BoardGenerationHelper.highlightSquare(row, col);
       }
     }
+  }
+
+  updatePrestige(friendlyPrestige, enemyPrestige) {
+    const myPrestigeEl = document.getElementById("friendly-prestige-area");
+    const enemyPrestigeEl = document.getElementById("enemy-prestige-area");
+
+    myPrestigeEl.textContent = friendlyPrestige;
+    enemyPrestigeEl.textContent = enemyPrestige;
   }
 
   updateTurnStatus() {
