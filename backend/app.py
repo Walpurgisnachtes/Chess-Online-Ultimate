@@ -22,7 +22,7 @@ from player_related.player import Player
 from controller import GameController
 
 # Directories
-BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 CSS_DIR = os.path.join("static", "css")
 IMG_DIR = os.path.join("static", "img")
 JS_DIR = os.path.join("static", "js")
@@ -37,7 +37,7 @@ app = Flask(
 )
 app.json.sort_keys = False
 app.secret_key = secrets.token_bytes(32)
-socketio = SocketIO(app)
+socketio = SocketIO(app, async_mode='eventlet')
 
 global_event_handler = EventHandler()
 
@@ -66,7 +66,7 @@ def set_event_handler(event_name: str):
 # Helper functions
 
 def get_full_file_path(dirname: str, filename: str) -> str:
-    return os.path.join(os.path.dirname(os.path.dirname(__file__)), dirname, filename)
+    return os.path.join(BASE_DIR, dirname, filename)
 
 def init_files():
     if not os.path.exists(get_full_file_path(DATABASE_DIR, USERS_FILE)):
@@ -207,6 +207,9 @@ def server_start():
     
     # 5. Register global event handler
     global_event_handler.on("select", handle_select_event)
+
+# 在模組載入時自動執行 server_start()
+server_start()
 
 @app.route('/')
 def no_path():
@@ -938,5 +941,4 @@ def handle_prestige_updated_event(data):
     }, room=room)
 
 if __name__ == '__main__':
-    server_start()
     socketio.run(app, host='0.0.0.0', debug=True)

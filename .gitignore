@@ -2,7 +2,6 @@
 venv/*
 
 # Database stuff
-*.txt
 
 # old versions
 */**/__pycache__/*
