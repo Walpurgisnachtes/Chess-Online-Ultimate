@@ -28,6 +28,13 @@
       href="{{ url_for('static', filename='css/error-toast.css') }}"
     />
     {% block css %} {% endblock %}
+    <script>
+      const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+    
+    const IMAGE_BASE_URL = isLocal 
+        ? "/static/img/" 
+        : "https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/img/";
+    </script>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg">

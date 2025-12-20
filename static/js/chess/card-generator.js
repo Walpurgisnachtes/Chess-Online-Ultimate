@@ -43,7 +43,7 @@ class CardGenerator {
         <div class="card-cost-badge">${data.cost}</div>
         ${
           data.img
-            ? `<img src="${data.img}" class="friendly-card-img-top card-img-top" loading="lazy" draggable="false">`
+            ? `<img src="${IMAGE_BASE_URL + data.img}" class="friendly-card-img-top card-img-top" loading="lazy" draggable="false">`
             : ""
         }
         <div class="card-body py-0">
