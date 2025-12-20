@@ -214,7 +214,7 @@ class DeckBuilder {
           <div class="card-cost-badge">${card.cost}</div>
           ${
             card.img
-              ? `<img src="${card.img}" class="collection-card-img-top card-img-top" loading="lazy">`
+              ? `<img src="${IMAGE_BASE_URL + card.img}" class="collection-card-img-top card-img-top" loading="lazy">`
               : ""
           }
           <div class="card-body p-2 d-flex align-items-center justify-content-center text-center">
@@ -402,7 +402,7 @@ class DeckBuilder {
       card.description || ""
     );
 
-    previewCard.querySelector("#previewImg").src = card.img || "";
+    previewCard.querySelector("#previewImg").src = card.img ? IMAGE_BASE_URL + card.img : "";
     previewCard.querySelector("#previewName").textContent =
       card.name || "Undefined";
     previewCard.querySelector("#previewCostBadge").textContent =
