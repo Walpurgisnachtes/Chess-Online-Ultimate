@@ -19,21 +19,15 @@
     />
 
     <!-- Custom Links -->
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/base.css') }}"
-    />
-    <link
-      rel="stylesheet"
-      href="{{ url_for('static', filename='css/error-toast.css') }}"
-    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/css/base.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/css/error-toast.css">
     {% block css %} {% endblock %}
     <script>
       const isLocal = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
     
-    const IMAGE_BASE_URL = isLocal 
-        ? "/static/img/" 
-        : "https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/img/";
+      const IMAGE_BASE_URL = isLocal 
+          ? "/static/img/" 
+          : "https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/img/";
     </script>
   </head>
   <body>
@@ -142,10 +136,10 @@
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
     <!-- Custom Scripts -->
-    <script src="{{ url_for('static', filename='js/base-color-mode-toggler.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/color-mode-toggler.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/error-toast.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/modal-manager.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/js/base-color-mode-toggler.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/js/color-mode-toggler.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/js/error-toast.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/Walpurgisnachtes/Chess-Online-Ultimate@main/static/js/modal-manager.js"></script>
 
     {% block scripts %} {% endblock %}
   </body>
