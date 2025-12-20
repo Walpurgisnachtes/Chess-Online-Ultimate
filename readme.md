@@ -1,7 +1,5 @@
 # Chess-Online-Ultimate
 
-![Chess-Online-Ultimate Banner](static/img/banner.png) <!-- Placeholder; replace with actual image if available -->
-
 ## Overview
 
 Chess-Online-Ultimate is an innovative web-based multiplayer game that combines the strategic depth of traditional chess with collectible card game (CCG) mechanics. Players build decks of 20 cards, select a "system" (institution) that influences resource generation (prestige), and use cards during matches to alter the board—such as attacking pieces, applying buffs, setting traps, or creating ongoing effects. The game supports real-time online play, user accounts, lobbies for matchmaking, deck building, and a full chess engine with CCG integrations.
