@@ -213,9 +213,6 @@ def server_start():
     # 5. Register global event handler
     global_event_handler.on("select", handle_select_event)
 
-# 在模組載入時自動執行 server_start()
-server_start()
-
 @app.route('/')
 def no_path():
     return redirect(url_for("home"))
@@ -944,6 +941,9 @@ def handle_prestige_updated_event(data):
         "white": data["white"],
         "black": data["black"],
     }, room=room)
+
+# 在模組載入時自動執行 server_start()
+server_start()
 
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', debug=True)
