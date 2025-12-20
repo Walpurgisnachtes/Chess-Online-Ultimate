@@ -1,4 +1,4 @@
-# Chess-Online-Ultimate
+# Chess Online Ultimate
 
 ## Overview
 
