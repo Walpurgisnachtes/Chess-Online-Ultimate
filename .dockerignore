@@ -2,8 +2,13 @@
 venv/*
 
 # Database stuff
+static/*
 
 # old versions
+v0.1_alpha/*
 */**/__pycache__/*
 */**/venv/*
 *.pyc
+
+.gitignore
+*.md
