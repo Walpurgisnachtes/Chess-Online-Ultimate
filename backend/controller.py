@@ -432,6 +432,9 @@ class GameController:
         return result
 
     def check_property_bound_with_status(self, piece: BasePiece):
+        # Kings are always unremovable 
+        if isinstance(piece, KingPiece) and not piece.has_status("unremovable"):
+            piece.add_status(StatusEffect("unremovable", countdown_method=StatusCountdownMethod.INFINITE))
         piece.is_capturable = not piece.has_status("uncapturable")
         piece.is_removable = not piece.has_status("unremovable")
 
@@ -622,19 +625,22 @@ Checking rule \"{color} {rule}\"
             })
 
     def remove_piece(self, squares: List[str]):
+        actually_removed_pieces_squares = []
         for square in squares:
-            piece = self.board.remove_piece(square)
-            if piece:
+            piece = self.board.get_piece_at_square(square)
+            if piece and not isinstance(piece, NonePiece) and piece.is_removable:
+                self.board.remove_piece(square)
                 self.card_event_handler.dispatch_event("piece_removed", data={
                     "piece": piece,
                     "position": squares
                 })
+                actually_removed_pieces_squares.append(square)
         self.event_handler.dispatch_event(
             event_name="remove_piece", 
             data={
                 "room": self.room,
-                "position": squares
-            })
+                "position": actually_removed_pieces_squares
+            })  
 
     def change_piece(self, target_cls: Type[BasePiece], squares: List[str]) -> None:
         missing = [
