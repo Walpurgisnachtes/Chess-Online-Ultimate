@@ -1,3 +1,6 @@
+import eventlet
+eventlet.monkey_patch()
+
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash
 from flask_socketio import SocketIO, join_room, emit, disconnect
 from copy import deepcopy
@@ -22,7 +25,9 @@ from player_related.player import Player
 from controller import GameController
 
 # Directories
-BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+_current_file_path = os.path.abspath(__file__)
+_backend_dir = os.path.dirname(_current_file_path)
+BASE_DIR = os.path.dirname(_backend_dir)
 CSS_DIR = os.path.join("static", "css")
 IMG_DIR = os.path.join("static", "img")
 JS_DIR = os.path.join("static", "js")
