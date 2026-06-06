@@ -12,7 +12,7 @@ This is a pure Model component — loaded once at server start, shared globally.
 
 from typing import List, Optional
 
-from card_related.card_driver import Card
+from backend.card_related.card_driver import Card
 
 
 class StaticCardLikeBase:

@@ -2,12 +2,12 @@ from typing import List, Tuple, Dict, Optional
 from uuid import UUID, uuid4
 import re
 
-from chess_related.piece import BasePiece, KingPiece, QueenPiece, BishopPiece, KnightPiece, RookPiece, PawnPiece, NonePiece
-from chess_related.chess_utils import *
+from backend.chess_related.piece import BasePiece, KingPiece, QueenPiece, BishopPiece, KnightPiece, RookPiece, PawnPiece, NonePiece
+from backend.chess_related.chess_utils import *
 
-from misc.enums import PieceName
+from backend.misc.enums import PieceName
 
-from controller_related.event_controller import EventHandler
+from backend.controller_related.event_controller import EventHandler
 class Board:
     """
     Represents an 8x8 chess board with support for chess variants.

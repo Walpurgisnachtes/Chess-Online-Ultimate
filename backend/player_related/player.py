@@ -8,8 +8,8 @@ Part of the MVC architecture (Model layer only).
 from copy import deepcopy
 from typing import List, Dict, Any
 
-from card_related.card_driver import Deck, Card
-from card_related.system_driver import System
+from backend.card_related.card_driver import Deck, Card
+from backend.card_related.system_driver import System
 
 
 class Player:

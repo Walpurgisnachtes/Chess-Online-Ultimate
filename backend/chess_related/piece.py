@@ -20,8 +20,8 @@ from copy import deepcopy
 from typing import List, Optional
 from uuid import UUID
 
-from chess_related.status_effect import StatusEffect
-from misc.enums import PieceName, StatusCountdownMethod
+from backend.chess_related.status_effect import StatusEffect
+from backend.misc.enums import PieceName, StatusCountdownMethod
 
 
 class BasePiece:

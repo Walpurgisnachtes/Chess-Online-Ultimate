@@ -8,21 +8,21 @@ import logging
 import time
 from threading import Event
 
-from card_related.card_driver import Card, Deck
-from card_related.system_driver import System
-from card_related.static_card_base import StaticCardBase, StaticSystemBase
+from backend.card_related.card_driver import Card, Deck
+from backend.card_related.system_driver import System
+from backend.card_related.static_card_base import StaticCardBase, StaticSystemBase
 
-from chess_related.board import Board
-from chess_related.piece import BasePiece, KingPiece, QueenPiece, BishopPiece, KnightPiece, RookPiece, PawnPiece, NonePiece
-from chess_related.chess_utils import *
-from chess_related.status_effect import StatusEffect
+from backend.chess_related.board import Board
+from backend.chess_related.piece import BasePiece, KingPiece, QueenPiece, BishopPiece, KnightPiece, RookPiece, PawnPiece, NonePiece
+from backend.chess_related.chess_utils import *
+from backend.chess_related.status_effect import StatusEffect
 
-from controller_related.event_controller import EventHandler
-from controller_related.static_filter_base import StaticFilterBase
+from backend.controller_related.event_controller import EventHandler
+from backend.controller_related.static_filter_base import StaticFilterBase
 
-from misc.enums import StatusCountdownMethod, PieceName
+from backend.misc.enums import StatusCountdownMethod, PieceName
 
-from player_related.player import Player
+from backend.player_related.player import Player
 
 class GameController:
     
